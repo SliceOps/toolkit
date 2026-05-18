@@ -1,0 +1,39 @@
+# =============================================================================
+# SliceOps Capa B.2 — CI/Pipeline Cost Economy : dependency cache restore
+# =============================================================================
+# Pattern (vendor-agnostic): cache the package-manager store keyed by lockfile
+# hash so paid CI minutes are not spent re-downloading dependencies every run.
+# Shortens every run; compounds with iteration velocity (P12).
+#
+# Concrete instances below: GitHub Actions for npm / pip / NuGet. Other
+# providers: GitLab `cache:key:files`, CircleCI `restore_cache`/`save_cache`.
+# -----------------------------------------------------------------------------
+
+# --- Node / npm ---
+# - uses: actions/setup-node@v4
+#   with:
+#     node-version: '20'
+#     cache: 'npm'                 # built-in cache keyed by package-lock.json
+
+# --- Python / pip ---
+# - uses: actions/setup-python@v5
+#   with:
+#     python-version: '3.12'
+#     cache: 'pip'                 # built-in cache keyed by requirements*.txt
+
+# --- Generic (any package manager) ---
+# - uses: actions/cache@v4
+#   with:
+#     path: |
+#       ~/.cache/<pkg-store>
+#     key: ${{ runner.os }}-deps-${{ hashFiles('**/<lockfile>') }}
+#     restore-keys: |
+#       ${{ runner.os }}-deps-
+
+steps:
+  - uses: actions/checkout@v4
+  - uses: actions/setup-node@v4
+    with:
+      node-version: '20'
+      cache: 'npm'
+  - run: npm ci

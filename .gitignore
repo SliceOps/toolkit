@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Editors
+.idea/
+.vscode/
+*.sublime-*
+
+# Build / tooling
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+target/
+dist/
+build/
+*.egg-info/
+
+# Local scratch
+/tmp/
+*.local

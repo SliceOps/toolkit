@@ -1,0 +1,29 @@
+# Recursive dogfooding: SliceOps toolkit repo runs the Capa B.2 CI guardrails
+# it publishes. Bootstrap default per P12 (NOT a retrofit).
+# Templates: templates/ci-guardrails/
+name: ci
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Capa B.2 — concurrency cancel-in-progress (dominant cost lever, P12)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Capa B.2 — aggregation-required-gate: single lightweight required check.
+  ci-gate:
+    if: github.event.pull_request.draft == false   # Capa B.2 draft-skip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify B.2 guardrail templates present
+        run: |
+          set -e
+          for f in concurrency-cancel change-scoped-gating aggregation-required-gate draft-skip dependency-cache; do
+            test -f "templates/ci-guardrails/$f.yml" || { echo "::error::missing guardrail template: $f.yml"; exit 1; }
+          done
+          test -f templates/cost-ledger/cost-ledger-template.md
+          echo "B.2 guardrail templates + cost-ledger: PASS"

@@ -1,0 +1,35 @@
+# =============================================================================
+# SliceOps Capa B.2 — CI/Pipeline Cost Economy : aggregation-required-gate
+# =============================================================================
+# Pattern (vendor-agnostic): a single `always()` job that is THE branch-
+# protection required check. It passes only if every gated upstream job either
+# succeeded or was legitimately skipped — and FAILS if any gated job failed.
+#
+# WHY MANDATORY: change-scoped gating (see change-scoped-gating.yml) makes jobs
+# `skipped` on docs-only PRs. If branch protection requires those jobs directly,
+# a skipped check leaves the PR "waiting for status" forever. This aggregation
+# job resolves the trap — it is REQUIRED whenever path-gating is used.
+#
+# Concrete instance: GitHub Actions. Other providers: a final "gate" stage that
+# depends on all jobs with allow-skipped semantics.
+# -----------------------------------------------------------------------------
+# Set THIS job ("ci-gate") as the only required status check in branch protection.
+
+  ci-gate:
+    needs: [build, docs-lint]   # list every gated job
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify no gated job failed or was cancelled
+        run: |
+          # Fail the gate if any dependency failed or was cancelled.
+          # 'skipped' is acceptable (change-gating legitimately skips jobs).
+          results='${{ needs.build.result }} ${{ needs.docs-lint.result }}'
+          echo "upstream results: $results"
+          for r in $results; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "::error::A required upstream job did not pass (result=$r)"
+              exit 1
+            fi
+          done
+          echo "ci-gate: PASS (no failure/cancelled; skipped is allowed)"

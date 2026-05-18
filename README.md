@@ -1,15 +1,27 @@
 # SliceOps Toolkit
 
-> CI workflows, validators, and tooling for SliceOps™ adopters.
+> CI guardrail templates, validators, and tooling for SliceOps™ adopters.
 
-**Status: scaffolding in progress.** Content and license pending.
+**Status: scaffolding in progress (private).** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Intended license: MIT (pending IP/Legal ratification — no `LICENSE` file yet by design).
 
-This repository is currently private while initial scaffolding is in progress. It will be made public when:
+## What's here
 
-- CI workflow starters scaffolded (validate-folder-structure, validate-cross-references-bidirectional, validate-no-orphan-decs, validate-frontmatter-schema, etc.)
-- Slice-forecaster + DAG builder skeleton implemented
-- License decision ratified
+| Path | Purpose |
+|---|---|
+| `templates/ci-guardrails/` | **Capa B.2 CI/Pipeline Cost Economy** reference templates (5 levers) — bootstrap defaults materializing P12 Shared-Resource Pre-flight |
+| `templates/cost-ledger/` | **Capa B.1** cost-ledger template with token + infra/CI dual dimension (P12) |
+
+## Roadmap (pending)
+
+- Layer 3 consistency CI validators (`validate-cross-references-bidirectional`, `validate-no-orphan-decs`, `validate-frontmatter-schema`, `validate-topic-tags`, counter atomicity for DEC/INS/HANDOFF)
+- `validate-folder-structure` (lightweight-pivot structure)
+- `validate-shared-resource-preflight`
+- slice-forecaster + DAG builder
+
+## Design posture
+
+The **patterns** are vendor-agnostic / stack-agnostic (Capa B.2). Concrete instances (GitHub Actions YAML, specific package managers) are Capa C.2 — each header documents the equivalent for other CI providers so adopters instantiate their own. Guardrails are **bootstrap defaults, never post-incident retrofit** (P12).
 
 ---
 
-Companion repository to [sliceops-spec](https://github.com/SliceOps/spec). License terms TBD.
+SliceOps™ is an open methodology authored by Andrés Ramírez Sierra. Trademark and copyright held personally.

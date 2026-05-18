@@ -1,0 +1,26 @@
+# =============================================================================
+# SliceOps Capa B.2 — CI/Pipeline Cost Economy : draft-skip of expensive jobs
+# =============================================================================
+# Pattern (vendor-agnostic): skip expensive jobs (AI audit, link-crawl, heavy
+# build, e2e) while a PR is in draft. Draft PRs are not mergeable anyway; run
+# the full suite on `ready_for_review`. Saves finite CI minutes during the
+# iterative drafting phase that dominates SliceOps work (P12).
+#
+# Concrete instance: GitHub Actions (`github.event.pull_request.draft`). Other
+# providers: GitLab `$CI_MERGE_REQUEST_DRAFT`, or a label/title convention.
+# -----------------------------------------------------------------------------
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  expensive-audit:
+    # Skip while draft; run once the PR is marked ready for review.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "expensive audit / link-crawl / e2e — only on non-draft PRs"
+
+  # Lightweight checks may still run on drafts (omit the draft guard there).

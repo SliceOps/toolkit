@@ -1,0 +1,63 @@
+# =============================================================================
+# SliceOps Capa B.2 — CI/Pipeline Cost Economy : change-scoped job gating
+# =============================================================================
+# Pattern (vendor-agnostic): gate heavy jobs (compile/test/build/audit) on
+# whether the PR actually touches code. A large fraction of SliceOps PRs are
+# markdown / orchestration / state (DECs, trackers, spawn-prompts) — those must
+# NOT trigger heavy compute. Without gating, a docs PR burns the same finite CI
+# minutes as a heavy code PR (P12 anti-pattern).
+#
+# CRITICAL PAIRING: change-gating creates the "required check skipped → PR
+# blocked forever" trap. ALWAYS pair with `aggregation-required-gate.yml`.
+#
+# Concrete instance: GitHub Actions + dorny/paths-filter. Other providers:
+# GitLab `rules:changes:`, CircleCI path-filtering orb, Buildkite
+# `if: build.pull_request.paths`.
+# -----------------------------------------------------------------------------
+
+name: ci
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - 'src/**'
+              - 'lib/**'
+              - '**/*.py'
+              - '**/*.ts'
+              - '**/*.cs'
+            docs:
+              - '**/*.md'
+              - 'spec/**'
+              - 'decisions/**'
+
+  build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "heavy build/test only when code changed"
+
+  docs-lint:
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "lightweight markdown lint when docs changed"
