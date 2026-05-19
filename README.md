@@ -10,10 +10,11 @@
 |---|---|
 | `templates/ci-guardrails/` | **Capa B.2 CI/Pipeline Cost Economy** reference templates (5 levers) — bootstrap defaults materializing P12 Shared-Resource Pre-flight |
 | `templates/cost-ledger/` | **Capa B.1** cost-ledger template with token + infra/CI dual dimension (P12) |
+| `templates/consistency-validators/` | **Capa B.1 Layer 3** consistency validators — workflow + deterministic `validators.py` (cross-references-bidirectional, no-orphan-decs, frontmatter-schema, topic-tags, counter-atomicity) |
 
 ## Roadmap (pending)
 
-- Layer 3 consistency CI validators (`validate-cross-references-bidirectional`, `validate-no-orphan-decs`, `validate-frontmatter-schema`, `validate-topic-tags`, counter atomicity for DEC/INS/HANDOFF)
+- Layer 3 Phase 3 validators (glossary-coverage, supersession-chain acyclicity, vocabulary-changes↔glossary sync)
 - `validate-folder-structure` (lightweight-pivot structure)
 - `validate-shared-resource-preflight`
 - slice-forecaster + DAG builder

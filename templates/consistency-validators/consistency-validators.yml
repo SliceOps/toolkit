@@ -1,0 +1,46 @@
+# SliceOps Capa B.1 — Layer 3 consistency validators (reference workflow).
+# Vendor-agnostic pattern; GitHub Actions instance (Capa C.2 per adopter).
+# Pairs with the CI guardrail templates (concurrency-cancel + aggregation-gate).
+# Spec: sliceops-spec reference/r-rules/layer-3-validators.md
+name: consistency-validators
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Capa B.2 CI/Pipeline Cost Economy — concurrency cancel-in-progress (P12)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  consistency:
+    if: github.event.pull_request.draft == false   # B.2 draft-skip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run Layer 3 consistency validators (deterministic)
+        run: |
+          python3 templates/consistency-validators/validators.py \
+            --root . \
+            --checks all \
+            --topic-taxonomy spec/v1.0.0/topics.md
+
+  # Capa B.2 aggregation-required-gate: the single required status check.
+  consistency-gate:
+    needs: [consistency]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify validators job did not fail/cancel
+        run: |
+          r='${{ needs.consistency.result }}'
+          echo "consistency result: $r"
+          if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+            echo "::error::consistency validators did not pass (result=$r)"
+            exit 1
+          fi
+          echo "consistency-gate: PASS (skipped is allowed)"
