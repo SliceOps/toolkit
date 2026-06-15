@@ -152,7 +152,8 @@ LLM_ENDPOINT_RE = re.compile(
 def check_principle_count_coherence(root):
     """Count P-NN headings in principles.md → compare against literals
     elsewhere in the spec. The canonical count is what principles.md *is*;
-    every literal that disagrees is drift (INS-007 — denormalized count drift)."""
+    every literal that disagrees is drift (the denormalized count drift
+    failure mode formalized in the spec)."""
     principles_md = os.path.join(root, "spec", "v1.0.0", "principles.md")
     if not os.path.exists(principles_md):
         return []  # nothing canonical to compare against
