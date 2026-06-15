@@ -136,11 +136,23 @@ COUNT_PRINCIPLE_RE = re.compile(
     r"\b(\d+)\s+canonical\s+principles?\b|\bP1[-–]P(\d+)\b", re.I
 )
 COUNT_ENTITY_RE = re.compile(
-    r"\b(\d+)\s+(?:canonical\s+)?(?:cognitive\s+)?entit(?:y|ies)\b|\b(\d+)-entity\b",
+    # Only the plural form or a quantified specific-noun form is canonical
+    # count language (e.g., "13 entities", "13 cognitive entities",
+    # "13 entity specs", "13 entity types", "13 entity catalog").
+    # Avoids matching "Capa B.1 Cognitive Entity" (a title — the "1" comes
+    # from "B.1" and "Entity" is the singular categorical, not a count).
+    r"(?<![.\w])(\d+)\s+(?:canonical\s+)?(?:cognitive\s+)?"
+    r"(?:entities\b|entity\s+(?:specs|types|catalog))",
     re.I,
 )
 BAND_UNIT_BAD_RE = re.compile(
-    r"token[-\s]band\b[^.\n]{0,80}\btotal[-\s]with[-\s]cache\b", re.I
+    # Only flag a *declarative* claim that token-band is measured in
+    # total-with-cache (the anti-pattern). Negation forms like
+    # "Token-band ... NOT total-with-cache" (legitimate clarification)
+    # are NOT a claim.
+    r"token[-\s]band\b[^.\n]{0,80}\b(?:in|as|=|equals?|measured\s+(?:in|as))\s+"
+    r"total[-\s]with[-\s]cache\b",
+    re.I,
 )
 LLM_ENDPOINT_RE = re.compile(
     r"api\.anthropic\.com|api\.openai\.com|generativelanguage\.googleapis\.com"
