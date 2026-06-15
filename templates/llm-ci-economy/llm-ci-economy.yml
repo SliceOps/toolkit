@@ -1,0 +1,100 @@
+# =============================================================================
+# SliceOps Capa B.2 (sub-domain) — LLM-Inference-Cost-Economy
+# =============================================================================
+# Demonstrates the five levers when a CI workflow calls a paid LLM API:
+#   A. Prompt-caching discipline (vendor-specific cache directive on the
+#      stable system / first content block — >5K tokens MUST be cached).
+#   B. Model-tier discipline (cheapest tier adequate; ties to Determinism-
+#      over-Regeneration: pattern-match → mid-tier; reasoning → top-tier).
+#   C. Diff-only context windowing (do not send full files when only the
+#      diff is needed).
+#   D. Trigger-set minimalism LLM-aware (no `synchronize` by default).
+#   E. LLM-aware draft gate (green-not-skipped, NOT skipped — otherwise the
+#      required check blocks the PR permanently).
+#
+# Pattern is vendor-agnostic; this is the GitHub Actions instance (Capa C.2).
+# Pairs with the CI guardrails template (concurrency-cancel + aggregation-gate).
+# Spec: sliceops-spec/reference/patterns/llm-inference-cost-economy.md
+# -----------------------------------------------------------------------------
+
+name: llm-audit
+
+on:
+  pull_request:
+    # Lever D — trigger-set minimalism LLM-aware: no `synchronize` by default.
+    # Re-trigger via close+reopen or draft↔ready toggle. Add `synchronize`
+    # ONLY with a documented cost-DEC exception.
+    types: [opened, reopened, ready_for_review]
+
+# Inherited from parent (CI/Pipeline Cost Economy): concurrency cancel-in-progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  llm-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Lever C — diff-only context windowing: shallow fetch + targeted diff.
+          # Full file fetch happens on-demand inside the audit logic only when
+          # the reasoning requires it.
+          fetch-depth: 0
+
+      # Lever E — LLM-aware draft gate: GREEN, NOT SKIPPED.
+      # A `skipped` required-check context blocks the PR permanently.
+      # Set an output and gate subsequent steps; the job itself exits 0.
+      - id: draftgate
+        name: Draft gate (green-not-skipped)
+        run: |
+          if [ "${{ github.event.pull_request.draft }}" = "true" ]; then
+            echo "draft — audit deferred to ready_for_review"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compute diff (Lever C — diff-only context)
+        if: steps.draftgate.outputs.skip != 'true'
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          # Small N for surrounding context. Full file only on-demand.
+          git diff -U5 "$base...$head" > /tmp/diff.patch
+          wc -c /tmp/diff.patch
+
+      - name: Run LLM audit (Levers A + B)
+        if: steps.draftgate.outputs.skip != 'true'
+        env:
+          # Lever B — model-tier discipline: prefer the cheapest tier adequate.
+          # For pattern-match / rule-compliance: a mid-tier model. For
+          # architectural critique / final gate: a top-tier model.
+          LLM_MODEL: ${{ vars.LLM_MODEL_MID_TIER }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          # Lever A — prompt-caching discipline: the stable system / first
+          # content block (rubric / audit checklist, typically >5K tokens)
+          # is sent with the vendor's cache directive set so that subsequent
+          # runs hit the cache (~40–60% of recurring cost is preventable
+          # spend if caching is skipped on stable blocks).
+          #
+          # Lever B — model selection: use ${LLM_MODEL} for pattern-match /
+          # rule-compliance; escalate to top-tier ONLY for the final ready-
+          # for-review reasoning step.
+          #
+          # The concrete API call belongs to the adopter's stack — this
+          # template documents the policy, the cost-ledger row, and the gate.
+          echo "TODO: adopter inserts the LLM call here, honoring Levers A+B+C."
+          echo "     - cache directive set on the stable block"
+          echo "     - model tier matches the task complexity"
+          echo "     - input context is the diff, not full files"
+
+      # Cost-ledger row (P5): emit a per-run cost estimate for the third
+      # dimension of the cost-ledger (LLM-API-in-CI).
+      - name: Emit cost-ledger row
+        if: always()
+        run: |
+          echo "::notice::cost-ledger LLM-API-in-CI dimension — adopter wires"
+          echo "          the actual token counts + tier here (see toolkit"
+          echo "          cost-ledger template, LLM-API column)."

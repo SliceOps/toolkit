@@ -9,8 +9,10 @@
 | Path | Purpose |
 |---|---|
 | `templates/ci-guardrails/` | **Capa B.2 CI/Pipeline Cost Economy** reference templates (5 levers) — bootstrap defaults materializing P12 Shared-Resource Pre-flight |
-| `templates/cost-ledger/` | **Capa B.1** cost-ledger template with token + infra/CI dual dimension (P12) |
+| `templates/llm-ci-economy/` | **Capa B.2 sub-domain LLM-Inference-Cost-Economy** — workflow demonstrating prompt-caching + model-tier + diff-only context + trigger-set minimalism LLM-aware + green-not-skipped draft gate |
+| `templates/cost-ledger/` | **Capa B.1** cost-ledger template with three dimensions: token (billed-equivalent) + infra/CI + LLM-API-in-CI (P12) |
 | `templates/consistency-validators/` | **Capa B.1 Layer 3** consistency validators — workflow + deterministic `validators.py` (cross-references-bidirectional, no-orphan-decs, frontmatter-schema, topic-tags, counter-atomicity) |
+| `calibration/` | **Capa B.1 Calibration discipline** — deterministic `calibrate.py` (stdlib) parses session `.jsonl` → percentiles → bands; `band-calibration-register.md` is the append-only audit trail (v1 baseline 2026-06-15) |
 
 ## Roadmap (pending)
 
