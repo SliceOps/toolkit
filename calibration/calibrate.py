@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 # SliceOps Capa B.1 — Band calibration reference implementation.
 #
 # Determinism-over-Regeneration (B.2): a fixed deterministic script, written

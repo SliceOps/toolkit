@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # SliceOps Capa B.1 — Layer 3 consistency validators (reference workflow).
 # Vendor-agnostic pattern; GitHub Actions instance (Capa C.2 per adopter).
 # Pairs with the CI guardrail templates (concurrency-cancel + aggregation-gate).

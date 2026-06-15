@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 # SliceOps Capa B.1 — Layer 3 consistency validators (reference implementation).
 # Determinism-over-Regeneration (B.2): a fixed deterministic script, written
 # once and reused — NOT AI-regenerated per run. Same corpus -> same result.
