@@ -2,7 +2,7 @@
 
 > CI guardrail templates, validators, and tooling for SliceOps™ adopters.
 
-**Status: scaffolding in progress (private).** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Intended license: MIT (pending IP/Legal ratification — no `LICENSE` file yet by design).
+**Status: scaffolding in progress (private).** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DR-2026-06-15-sliceops-license-ratification`).
 
 ## What's here
 
@@ -31,7 +31,7 @@ Licensed under the [MIT License](LICENSE). Copyright (c) 2026 Andrés Ramírez S
 
 Code files carry an `SPDX-License-Identifier: MIT` header so per-file scope stays unambiguous when files are reused individually.
 
-SliceOps™ is a trademark of Andrés Ramírez Sierra (EUIPO filing #019381071, pending registration); trademark usage is governed separately by `TRADEMARK.md` in [sliceops-spec](https://github.com/SliceOps/spec) (pending). The MIT license does not transfer trademark rights.
+SliceOps™ is a trademark of Andrés Ramírez Sierra (EUIPO filing #019381071, pending registration); trademark usage is governed separately by [`TRADEMARK.md`](https://github.com/SliceOps/spec/blob/main/TRADEMARK.md) in [sliceops-spec](https://github.com/SliceOps/spec). The MIT license does not transfer trademark rights.
 
 ---
 
