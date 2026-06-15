@@ -11,7 +11,9 @@ Layers 1–2 are manual (frontmatter discipline + pre-merge checklist + HITL). L
 | `consistency-validators.yml` | GitHub Actions workflow — one job per validator + an aggregation-required-gate |
 | `validators.py` | Deterministic reference script implementing the checks (Determinism-over-Regeneration B.2 — written once, reused; not AI-regenerated per run) |
 
-## Validators (Phase 2 + counter-atomicity)
+## Validators (Phase 2 + 2.5 + counter-atomicity)
+
+### Phase 2 — baseline
 
 | Check | Enforces |
 |---|---|
@@ -20,6 +22,15 @@ Layers 1–2 are manual (frontmatter discipline + pre-merge checklist + HITL). L
 | `frontmatter-schema` | Layer 1 fields present + well-formed |
 | `topic-tags` | every `topics:` value ∈ canonical topic taxonomy |
 | `counter-atomicity` | no two artifacts share `<PREFIX>-NNN`; counter store ≥ real max (P12) |
+
+### Phase 2.5 — denormalized-drift and unit/cost coherence
+
+| Check | Enforces |
+|---|---|
+| `principle-count-coherence` | The count of P-NN headings in `principles.md` is the canonical truth; every literal "N principles" / "P1-PN" elsewhere must match. Closes the failure mode that the manual fix-on-touch does not converge (an empirically demonstrated recurrence). |
+| `entity-count-coherence` | The count of `NN-*.md` files in `reference/entity-catalog/` is canonical; every literal "N entities" / "N cognitive entities" / "N-entity" must match. Same denormalized-drift family as principle-count. |
+| `band-unit` | Token-band must be in **billed-equivalent**, NOT total-with-cache (which inflates ~5×). Flags any spec text declaring token-band in total-with-cache as the canonical unit. |
+| `llm-ci-cost` | **R-LLM-CI-COST.** Workflows calling a paid-LLM endpoint must: have a concurrency cancel-in-progress block, NOT trigger on `synchronize` (without a documented exception), and use a step-level draft gate that ends green-not-skipped (a `skipped` required check blocks the PR permanently). |
 
 Phase 3 (glossary-coverage, supersession-chain acyclicity, vocabulary-changes↔glossary sync) are documented in the spec and added when the corpus warrants.
 

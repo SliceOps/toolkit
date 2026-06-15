@@ -130,6 +130,155 @@ def check_counter_atomicity(root):
     return errs
 
 
+PRINCIPLE_RE = re.compile(r"^##\s+P(\d+)\s+—", re.M)
+ENTITY_FILE_RE = re.compile(r"^(\d+)-[a-z0-9-]+\.md$")
+COUNT_PRINCIPLE_RE = re.compile(
+    r"\b(\d+)\s+canonical\s+principles?\b|\bP1[-–]P(\d+)\b", re.I
+)
+COUNT_ENTITY_RE = re.compile(
+    r"\b(\d+)\s+(?:canonical\s+)?(?:cognitive\s+)?entit(?:y|ies)\b|\b(\d+)-entity\b",
+    re.I,
+)
+BAND_UNIT_BAD_RE = re.compile(
+    r"token[-\s]band\b[^.\n]{0,80}\btotal[-\s]with[-\s]cache\b", re.I
+)
+LLM_ENDPOINT_RE = re.compile(
+    r"api\.anthropic\.com|api\.openai\.com|generativelanguage\.googleapis\.com"
+    r"|bedrock[-.\w]*\binvoke|\b(claude|gpt-?\d|gemini|sonnet|haiku|opus)\b",
+    re.I,
+)
+
+
+def check_principle_count_coherence(root):
+    """Count P-NN headings in principles.md → compare against literals
+    elsewhere in the spec. The canonical count is what principles.md *is*;
+    every literal that disagrees is drift (INS-007 — denormalized count drift)."""
+    principles_md = os.path.join(root, "spec", "v1.0.0", "principles.md")
+    if not os.path.exists(principles_md):
+        return []  # nothing canonical to compare against
+    with open(principles_md, encoding="utf-8") as fh:
+        text = fh.read()
+    nums = [int(n) for n in PRINCIPLE_RE.findall(text)]
+    if not nums:
+        return ["principle-count-coherence: principles.md has no P-NN headings"]
+    canonical = max(nums)
+    errs = []
+    for p in find_docs(root):
+        if p == principles_md:
+            continue
+        try:
+            with open(p, encoding="utf-8") as fh:
+                body = fh.read()
+        except OSError:
+            continue
+        for m in COUNT_PRINCIPLE_RE.finditer(body):
+            literal = int(next(g for g in m.groups() if g))
+            if literal != canonical:
+                line = body[: m.start()].count("\n") + 1
+                rel = os.path.relpath(p, root)
+                errs.append(
+                    f"{rel}:{line}: literal '{m.group(0)}' "
+                    f"disagrees with canonical {canonical}"
+                )
+    return errs
+
+
+def check_entity_count_coherence(root):
+    """Count NN-*.md files in reference/entity-catalog → compare against
+    literals 'N entities' / 'N cognitive entities' / 'N-entity' elsewhere."""
+    cat_dir = os.path.join(root, "reference", "entity-catalog")
+    if not os.path.isdir(cat_dir):
+        return []
+    canonical = sum(
+        1 for f in os.listdir(cat_dir) if ENTITY_FILE_RE.match(f)
+    )
+    if canonical == 0:
+        return []
+    errs = []
+    for p in find_docs(root):
+        try:
+            with open(p, encoding="utf-8") as fh:
+                body = fh.read()
+        except OSError:
+            continue
+        for m in COUNT_ENTITY_RE.finditer(body):
+            literal = int(next(g for g in m.groups() if g))
+            if literal != canonical:
+                line = body[: m.start()].count("\n") + 1
+                rel = os.path.relpath(p, root)
+                errs.append(
+                    f"{rel}:{line}: literal '{m.group(0)}' "
+                    f"disagrees with canonical {canonical}"
+                )
+    return errs
+
+
+def check_band_unit(root):
+    """Token-band must be in billed-equivalent, NOT total-with-cache."""
+    errs = []
+    for p in find_docs(root):
+        try:
+            with open(p, encoding="utf-8") as fh:
+                body = fh.read()
+        except OSError:
+            continue
+        for m in BAND_UNIT_BAD_RE.finditer(body):
+            line = body[: m.start()].count("\n") + 1
+            rel = os.path.relpath(p, root)
+            errs.append(
+                f"{rel}:{line}: token-band described as 'total-with-cache' "
+                f"(canonical unit is billed-equivalent)"
+            )
+    return errs
+
+
+def iter_workflows(root):
+    for dirpath, _, files in os.walk(root):
+        if ".github/workflows" in dirpath:
+            for f in files:
+                if f.endswith(".yml") or f.endswith(".yaml"):
+                    yield os.path.join(dirpath, f)
+        for f in files:
+            if f.endswith(".yml") and "workflow" in f.lower():
+                yield os.path.join(dirpath, f)
+
+
+def check_llm_ci_cost(root):
+    """R-LLM-CI-COST — workflows calling a paid-LLM endpoint must:
+      (1) have a concurrency cancel-in-progress block,
+      (2) NOT trigger on `synchronize` (without an exception comment),
+      (3) draft gate end green-not-skipped (the heuristic: no top-level
+          `if: ... draft == false` that would skip the whole job — a step-
+          level gate setting an output is the right shape)."""
+    errs = []
+    seen = set()
+    for p in iter_workflows(root):
+        if p in seen:
+            continue
+        seen.add(p)
+        try:
+            with open(p, encoding="utf-8") as fh:
+                body = fh.read()
+        except OSError:
+            continue
+        if not LLM_ENDPOINT_RE.search(body):
+            continue
+        rel = os.path.relpath(p, root)
+        if "cancel-in-progress: true" not in body:
+            errs.append(f"{rel}: paid-LLM workflow missing "
+                        f"`concurrency: cancel-in-progress: true`")
+        if "synchronize" in body and "synchronize-allowed" not in body:
+            errs.append(f"{rel}: `synchronize` trigger on paid-LLM workflow "
+                        f"without `# synchronize-allowed: <ref>` exception")
+        # Heuristic: encourage step-level draft gating (skip output → if guards)
+        if ("draft == false" in body or "draft: false" in body) \
+                and "skip=true" not in body:
+            errs.append(f"{rel}: top-level draft skip risks `skipped` "
+                        f"required-check (use a step-level gate that emits "
+                        f"`skip=true` so the job exits green)")
+    return errs
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
@@ -139,11 +288,17 @@ def main():
 
     docs = {p: read_frontmatter(p) for p in find_docs(args.root)}
     all_checks = {
+        # Phase 2
         "frontmatter-schema": lambda: check_frontmatter_schema(docs),
         "no-orphan-decs": lambda: check_no_orphan(docs),
         "cross-references-bidirectional": lambda: check_bidirectional(docs),
         "topic-tags": lambda: check_topic_tags(docs, args.topic_taxonomy),
         "counter-atomicity": lambda: check_counter_atomicity(args.root),
+        # Phase 2.5
+        "principle-count-coherence": lambda: check_principle_count_coherence(args.root),
+        "entity-count-coherence": lambda: check_entity_count_coherence(args.root),
+        "band-unit": lambda: check_band_unit(args.root),
+        "llm-ci-cost": lambda: check_llm_ci_cost(args.root),
     }
     selected = (all_checks if args.checks == "all"
                 else {k: all_checks[k] for k in args.checks.split(",")
