@@ -1,4 +1,4 @@
-# Cost Ledger — template (Capa B.1)
+# Cost Ledger — template (Layer B.1)
 
 > SliceOps cost-ledger with **three dimensions**: token cost **+** infra/CI cost **+** LLM-API-in-CI cost.
 > A token-only ledger is blind to finite shared resources (CI minutes / API
@@ -7,7 +7,7 @@
 > *before* it cuts. The LLM-API dimension was added when LLM-Inference-Cost-
 > Economy (B.2 sub-domain) formalized the LLM-API budget as a third resource
 > class with distinct dynamics (`PR velocity × push-frequency × prompt-size`).
-> Copy per adopter; instance-specific units are Capa C.2.
+> Copy per adopter; instance-specific units are Layer C.2.
 
 ## Per-Block summary
 
@@ -59,7 +59,7 @@ last Block-Retrospective baseline):**
 
 ## Anti-patterns (P12 + LLM-Inference-Cost-Economy)
 
-- Spending limit `$0` / default quota → "exhaust resource" becomes "invisible
+- Spending limit `$0` / default quota leads to "exhaust resource" becoming "invisible
   hard-cut" instead of "warned degradation"
 - Cost-ledger that tracks only tokens (infra-cost + LLM-API blindness)
 - Cost-ledger that tracks tokens + infra but NOT LLM-API-in-CI (the most

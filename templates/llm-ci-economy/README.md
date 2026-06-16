@@ -1,6 +1,6 @@
-# LLM-CI-Economy — Capa B.2 sub-domain reference templates
+# LLM-CI-Economy — Layer B.2 sub-domain reference templates
 
-Reference implementation of the **LLM-Inference-Cost-Economy** Capa B.2 sub-domain pattern (specialized within CI/Pipeline Cost Economy). Applies when a CI workflow calls a **paid LLM API** (audit, code-review, QA, codegen).
+Reference implementation of the **LLM-Inference-Cost-Economy** Layer B.2 sub-domain pattern (specialized within CI/Pipeline Cost Economy). Applies when a CI workflow calls a **paid LLM API** (audit, code-review, QA, codegen).
 
 Spec: `sliceops-spec/reference/patterns/llm-inference-cost-economy.md`.
 

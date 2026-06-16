@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
-# SliceOps Capa B.1 — Layer 3 consistency validators (reference workflow).
-# Vendor-agnostic pattern; GitHub Actions instance (Capa C.2 per adopter).
+# SliceOps Layer B.1 — Layer 3 consistency validators (reference workflow).
+# Vendor-agnostic pattern; GitHub Actions instance (Layer C.2 per adopter).
 # Pairs with the CI guardrail templates (concurrency-cancel + aggregation-gate).
 # Spec: sliceops-spec reference/r-rules/layer-3-validators.md
 name: consistency-validators
@@ -9,7 +9,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
-# Capa B.2 CI/Pipeline Cost Economy — concurrency cancel-in-progress (P12)
+# Layer B.2 CI/Pipeline Cost Economy — concurrency cancel-in-progress (P12)
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -30,7 +30,7 @@ jobs:
             --checks all \
             --topic-taxonomy spec/v1.0.0/topics.md
 
-  # Capa B.2 aggregation-required-gate: the single required status check.
+  # Layer B.2 aggregation-required-gate: the single required status check.
   consistency-gate:
     needs: [consistency]
     if: always()

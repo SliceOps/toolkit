@@ -1,12 +1,12 @@
 # Calibration — band-calibration tooling
 
-Reference implementation of the **Band Calibration discipline** (Capa B.1). The *specification* lives in the SliceOps spec (`reference/sizing/`); this folder is the *executable starter*.
+Reference implementation of the **Band Calibration discipline** (Layer B.1). The *specification* lives in the SliceOps spec (`reference/sizing/`); this folder is the *executable starter*.
 
 ## Files
 
 | File | Role |
 |---|---|
-| `calibrate.py` | Deterministic Python script: parses a directory of session `.jsonl` files → percentiles → proposed bands. Stdlib only. Determinism-over-Regeneration (B.2). |
+| `calibrate.py` | Deterministic Python script: parses a directory of session `.jsonl` files, then percentiles, then proposed bands. Stdlib only. Determinism-over-Regeneration (B.2). |
 | `band-calibration-register.md` | The living, versioned register of every calibration (the audit trail). |
 
 ## Why deterministic

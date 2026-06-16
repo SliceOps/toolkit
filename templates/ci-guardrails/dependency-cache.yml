@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # =============================================================================
-# SliceOps Capa B.2 — CI/Pipeline Cost Economy : dependency cache restore
+# SliceOps Layer B.2 — CI/Pipeline Cost Economy : dependency cache restore
 # =============================================================================
 # Pattern (vendor-agnostic): cache the package-manager store keyed by lockfile
 # hash so paid CI minutes are not spent re-downloading dependencies every run.

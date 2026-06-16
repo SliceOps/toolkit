@@ -1,4 +1,4 @@
-# Consistency Validators — Capa B.1 Layer 3 (reference templates)
+# Consistency Validators — Layer B.1 Layer 3 (reference templates)
 
 Runnable reference implementation of the consistency-management **Layer 3** CI validators. The *specification* lives in the SliceOps spec repo (`reference/r-rules/layer-3-validators.md`); this folder is the *executable starter*.
 
@@ -36,8 +36,8 @@ Phase 3 (glossary-coverage, supersession-chain acyclicity, vocabulary-changes↔
 
 ## Design
 
-- **Vendor-agnostic pattern / GitHub-Actions instance**: the *pattern* is Capa B.1; this concrete workflow is a Capa C.2 instance. Other CI providers: port the same jobs.
-- **Deterministic**: `validators.py` is a fixed script (same corpus → same result), not stochastic regeneration — B.2 Determinism-over-Regeneration, reinforces P5 (repeatable evidence) + P12 (cost economy).
+- **Vendor-agnostic pattern / GitHub-Actions instance**: the *pattern* is Layer B.1; this concrete workflow is a Layer C.2 instance. Other CI providers: port the same jobs.
+- **Deterministic**: `validators.py` is a fixed script (same corpus gives the same result), not stochastic regeneration — B.2 Determinism-over-Regeneration, reinforces P5 (repeatable evidence) + P12 (cost economy).
 - **Paths/prefixes are configurable**: the script takes the corpus root + prefix map as args so adopters bind it to their layout without editing logic.
 - **Bootstrap default**: ships with the repo scaffold, not retrofitted post-incident (P12).
 

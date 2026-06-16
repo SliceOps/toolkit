@@ -23,7 +23,7 @@ Schema:
 | **Script version** | v1 (this folder's `calibrate.py` at the time of the baseline) |
 | **Proposed bands — context-band** | XS<32K · S 32–128K · M 128–200K · L 200–512K · XL>512K |
 | **Proposed bands — token-band (billed-equivalent)** | XS<2M · S 2–5M · M 5–10M · L 10–20M · XL>20M |
-| **Headline finding** | Median peak footprint 259K → **>50% of sessions exceed a 200K window** → context-band as the **primary filter** in Model Triage is empirically validated, not theoretical. Token-band M (5–10M) covers the median of real work. |
+| **Headline finding** | Median peak footprint 259K leads to **>50% of sessions exceed a 200K window**, which makes context-band the **primary filter** in Model Triage — empirically validated, not theoretical. Token-band M (5–10M) covers the median of real work. |
 | **Caveat** | Aggregate sample — mixes all Session-Types. DEV-only bands are expected to skew smaller; per-type recalibration deferred until session-index tagging by Session-Type matures. |
 
 ---

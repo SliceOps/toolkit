@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # =============================================================================
-# SliceOps Capa B.2 (sub-domain) — LLM-Inference-Cost-Economy
+# SliceOps Layer B.2 (sub-domain) — LLM-Inference-Cost-Economy
 # =============================================================================
 # Demonstrates the five levers when a CI workflow calls a paid LLM API:
 #   A. Prompt-caching discipline (vendor-specific cache directive on the
@@ -13,7 +13,7 @@
 #   E. LLM-aware draft gate (green-not-skipped, NOT skipped — otherwise the
 #      required check blocks the PR permanently).
 #
-# Pattern is vendor-agnostic; this is the GitHub Actions instance (Capa C.2).
+# Pattern is vendor-agnostic; this is the GitHub Actions instance (Layer C.2).
 # Pairs with the CI guardrails template (concurrency-cancel + aggregation-gate).
 # Spec: sliceops-spec/reference/patterns/llm-inference-cost-economy.md
 # -----------------------------------------------------------------------------

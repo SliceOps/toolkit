@@ -8,11 +8,11 @@
 
 | Path | Purpose |
 |---|---|
-| `templates/ci-guardrails/` | **Capa B.2 CI/Pipeline Cost Economy** reference templates (5 levers) — bootstrap defaults materializing P12 Shared-Resource Pre-flight |
-| `templates/llm-ci-economy/` | **Capa B.2 sub-domain LLM-Inference-Cost-Economy** — workflow demonstrating prompt-caching + model-tier + diff-only context + trigger-set minimalism LLM-aware + green-not-skipped draft gate |
-| `templates/cost-ledger/` | **Capa B.1** cost-ledger template with three dimensions: token (billed-equivalent) + infra/CI + LLM-API-in-CI (P12) |
-| `templates/consistency-validators/` | **Capa B.1 Layer 3** consistency validators — workflow + deterministic `validators.py` (cross-references-bidirectional, no-orphan-decs, frontmatter-schema, topic-tags, counter-atomicity) |
-| `calibration/` | **Capa B.1 Calibration discipline** — deterministic `calibrate.py` (stdlib) parses session `.jsonl` → percentiles → bands; `band-calibration-register.md` is the append-only audit trail (v1 baseline 2026-06-15) |
+| `templates/ci-guardrails/` | **Layer B.2 CI/Pipeline Cost Economy** reference templates (5 levers) — bootstrap defaults materializing P12 Shared-Resource Pre-flight |
+| `templates/llm-ci-economy/` | **Layer B.2 sub-domain LLM-Inference-Cost-Economy** — workflow demonstrating prompt-caching + model-tier + diff-only context + trigger-set minimalism LLM-aware + green-not-skipped draft gate |
+| `templates/cost-ledger/` | **Layer B.1** cost-ledger template with three dimensions: token (billed-equivalent) + infra/CI + LLM-API-in-CI (P12) |
+| `templates/consistency-validators/` | **Layer B.1 Layer 3** consistency validators — workflow + deterministic `validators.py` (cross-references-bidirectional, no-orphan-decs, frontmatter-schema, topic-tags, counter-atomicity) |
+| `calibration/` | **Layer B.1 Calibration discipline** — deterministic `calibrate.py` (stdlib) parses session `.jsonl`, then percentiles, then bands; `band-calibration-register.md` is the append-only audit trail (v1 baseline 2026-06-15) |
 
 ## Roadmap (pending)
 
@@ -23,7 +23,7 @@
 
 ## Design posture
 
-The **patterns** are vendor-agnostic / stack-agnostic (Capa B.2). Concrete instances (GitHub Actions YAML, specific package managers) are Capa C.2 — each header documents the equivalent for other CI providers so adopters instantiate their own. Guardrails are **bootstrap defaults, never post-incident retrofit** (P12).
+The **patterns** are vendor-agnostic / stack-agnostic (Layer B.2). Concrete instances (GitHub Actions YAML, specific package managers) are Layer C.2 — each header documents the equivalent for other CI providers so adopters instantiate their own. Guardrails are **bootstrap defaults, never post-incident retrofit** (P12).
 
 ## License
 
@@ -35,4 +35,4 @@ SliceOps™ is a trademark of Andrés Ramírez Sierra (EUIPO filing #019381071, 
 
 ---
 
-SliceOps™ is an open methodology authored by Andrés Ramírez Sierra. Trademark and copyright held personally.
+SliceOps™ is an open framework authored by Andrés Ramírez Sierra. Trademark and copyright held personally.

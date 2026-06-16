@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 # =============================================================================
-# SliceOps Capa B.2 — CI/Pipeline Cost Economy : concurrency cancel-in-progress
+# SliceOps Layer B.2 — CI/Pipeline Cost Economy : concurrency cancel-in-progress
 # =============================================================================
 # Pattern (vendor-agnostic): when a new run starts for the same logical unit
 # (PR / branch), cancel the in-progress run. Its savings scale with iteration
@@ -18,7 +18,7 @@
 # Drop this `concurrency:` block at the TOP LEVEL of every PR-triggered workflow.
 
 concurrency:
-  # One in-flight run per workflow per ref. New push → cancel the previous run.
+  # One in-flight run per workflow per ref. New push cancels the previous run.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 

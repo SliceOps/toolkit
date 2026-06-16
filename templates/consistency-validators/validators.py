@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-# SliceOps Capa B.1 — Layer 3 consistency validators (reference implementation).
+# SliceOps Layer B.1 — Layer 3 consistency validators (reference implementation).
 # Determinism-over-Regeneration (B.2): a fixed deterministic script, written
 # once and reused — NOT AI-regenerated per run. Same corpus -> same result.
 #
@@ -140,7 +140,7 @@ COUNT_ENTITY_RE = re.compile(
     # Only the plural form or a quantified specific-noun form is canonical
     # count language (e.g., "13 entities", "13 cognitive entities",
     # "13 entity specs", "13 entity types", "13 entity catalog").
-    # Avoids matching "Capa B.1 Cognitive Entity" (a title — the "1" comes
+    # Avoids matching "Layer B.1 Cognitive Entity" (a title — the "1" comes
     # from "B.1" and "Entity" is the singular categorical, not a count).
     r"(?<![.\w])(\d+)\s+(?:canonical\s+)?(?:cognitive\s+)?"
     r"(?:entities\b|entity\s+(?:specs|types|catalog))",
@@ -163,7 +163,7 @@ LLM_ENDPOINT_RE = re.compile(
 
 
 def check_principle_count_coherence(root):
-    """Count P-NN headings in principles.md → compare against literals
+    """Count P-NN headings in principles.md, then compare against literals
     elsewhere in the spec. The canonical count is what principles.md *is*;
     every literal that disagrees is drift (the denormalized count drift
     failure mode formalized in the spec)."""
@@ -198,7 +198,7 @@ def check_principle_count_coherence(root):
 
 
 def check_entity_count_coherence(root):
-    """Count NN-*.md files in reference/entity-catalog → compare against
+    """Count NN-*.md files in reference/entity-catalog, then compare against
     literals 'N entities' / 'N cognitive entities' / 'N-entity' elsewhere."""
     cat_dir = os.path.join(root, "reference", "entity-catalog")
     if not os.path.isdir(cat_dir):
@@ -284,7 +284,7 @@ def check_llm_ci_cost(root):
         if "synchronize" in body and "synchronize-allowed" not in body:
             errs.append(f"{rel}: `synchronize` trigger on paid-LLM workflow "
                         f"without `# synchronize-allowed: <ref>` exception")
-        # Heuristic: encourage step-level draft gating (skip output → if guards)
+        # Heuristic: encourage step-level draft gating (skip output feeding if guards)
         if ("draft == false" in body or "draft: false" in body) \
                 and "skip=true" not in body:
             errs.append(f"{rel}: top-level draft skip risks `skipped` "
