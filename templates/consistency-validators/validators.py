@@ -5,7 +5,7 @@
 # once and reused — NOT AI-regenerated per run. Same corpus -> same result.
 #
 # Vendor-agnostic pattern; this is a GitHub-Actions-friendly instance (exit
-# code != 0 fails the job). Adopters bind --root + conventions to their layout.
+# code != 0 fails the job). Adopters bind --root and conventions to their layout.
 #
 # Usage:
 #   python3 validators.py --root <corpus-root> [--checks all|<name,...>]

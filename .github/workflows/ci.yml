@@ -27,4 +27,4 @@ jobs:
             test -f "templates/ci-guardrails/$f.yml" || { echo "::error::missing guardrail template: $f.yml"; exit 1; }
           done
           test -f templates/cost-ledger/cost-ledger-template.md
-          echo "B.2 guardrail templates + cost-ledger: PASS"
+          echo "B.2 guardrail templates and cost-ledger: PASS"

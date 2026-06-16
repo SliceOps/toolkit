@@ -11,7 +11,7 @@ Reference implementation of the **Band Calibration discipline** (Layer B.1). The
 
 ## Why deterministic
 
-Calibration is not stochastic AI generation — it is reproducible measurement. Same corpus + same script version + same weights = same percentiles = same proposed bands. The script is written **once and reused** (Determinism-over-Regeneration); ad-hoc calibration scripts are an anti-pattern (they drift, they cannot be re-run for comparison, they break audit).
+Calibration is not stochastic AI generation — it is reproducible measurement. Same corpus, same script version, and same weights = same percentiles = same proposed bands. The script is written **once and reused** (Determinism-over-Regeneration); ad-hoc calibration scripts are an anti-pattern (they drift, they cannot be re-run for comparison, they break audit).
 
 ## Usage
 
@@ -22,7 +22,7 @@ python3 calibrate.py \
   --model-landscape "<snapshot of model classes/windows at the time>"
 ```
 
-The script prints percentiles + proposed bands + a single-line summary suitable for copy-paste into `band-calibration-register.md`.
+The script prints percentiles, proposed bands, and a single-line summary suitable for copy-paste into `band-calibration-register.md`.
 
 ## Where session corpora come from
 
@@ -34,4 +34,4 @@ Quarterly (every ~3–4 months), or immediately when the model landscape changes
 
 ## Vendor billing weights
 
-The two cache weights — `cache_creation × 1.25` and `cache_read × 0.10` — match the canonical vendor pricing convention used for the SliceOps baseline. **Verify against the vendor's pricing card on each recalibration.** If the vendor changes weights or a different vendor is used, update the constants at the top of `calibrate.py` and record the change in the register entry (the script-version + landscape line make it auditable).
+The two cache weights — `cache_creation × 1.25` and `cache_read × 0.10` — match the canonical vendor pricing convention used for the SliceOps baseline. **Verify against the vendor's pricing card on each recalibration.** If the vendor changes weights or a different vendor is used, update the constants at the top of `calibrate.py` and record the change in the register entry (the script-version and landscape line make it auditable).

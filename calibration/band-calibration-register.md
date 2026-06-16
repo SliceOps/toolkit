@@ -1,6 +1,6 @@
 # Band Calibration Register
 
-Living, versioned record of every band calibration. Each entry is one row — append-only. Drift over time is auditable; the script version + model-landscape lines make every calibration reproducible.
+Living, versioned record of every band calibration. Each entry is one row — append-only. Drift over time is auditable; the script version and model-landscape lines make every calibration reproducible.
 
 Schema:
 

@@ -1,6 +1,6 @@
 # Cost Ledger template — Layer B.1
 
-The SliceOps cost-ledger Framework Artifact, extended to a **dual dimension**: token cost + infra/CI cost (per P12 — Shared-Resource Pre-flight).
+The SliceOps cost-ledger Framework Artifact, extended to a **dual dimension**: token cost and infra/CI cost (per P12 — Shared-Resource Pre-flight).
 
 `cost-ledger-template.md` is the copy-per-adopter template. Instance-specific units (CI provider, currency, quota numbers) are Layer C.2 — the adopter fills them.
 

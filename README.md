@@ -9,9 +9,9 @@
 | Path | Purpose |
 |---|---|
 | `templates/ci-guardrails/` | **Layer B.2 CI/Pipeline Cost Economy** reference templates (5 levers) — bootstrap defaults materializing P12 Shared-Resource Pre-flight |
-| `templates/llm-ci-economy/` | **Layer B.2 sub-domain LLM-Inference-Cost-Economy** — workflow demonstrating prompt-caching + model-tier + diff-only context + trigger-set minimalism LLM-aware + green-not-skipped draft gate |
-| `templates/cost-ledger/` | **Layer B.1** cost-ledger template with three dimensions: token (billed-equivalent) + infra/CI + LLM-API-in-CI (P12) |
-| `templates/consistency-validators/` | **Layer B.1 Layer 3** consistency validators — workflow + deterministic `validators.py` (cross-references-bidirectional, no-orphan-decs, frontmatter-schema, topic-tags, counter-atomicity) |
+| `templates/llm-ci-economy/` | **Layer B.2 sub-domain LLM-Inference-Cost-Economy** — workflow demonstrating prompt-caching, model-tier, diff-only context, trigger-set minimalism LLM-aware, and green-not-skipped draft gate |
+| `templates/cost-ledger/` | **Layer B.1** cost-ledger template with three dimensions: token (billed-equivalent), infra/CI, and LLM-API-in-CI (P12) |
+| `templates/consistency-validators/` | **Layer B.1 Layer 3** consistency validators — workflow and deterministic `validators.py` (cross-references-bidirectional, no-orphan-decs, frontmatter-schema, topic-tags, counter-atomicity) |
 | `calibration/` | **Layer B.1 Calibration discipline** — deterministic `calibrate.py` (stdlib) parses session `.jsonl`, then percentiles, then bands; `band-calibration-register.md` is the append-only audit trail (v1 baseline 2026-06-15) |
 
 ## Roadmap (pending)
@@ -19,7 +19,7 @@
 - Layer 3 Phase 3 validators (glossary-coverage, supersession-chain acyclicity, vocabulary-changes↔glossary sync)
 - `validate-folder-structure` (lightweight-pivot structure)
 - `validate-shared-resource-preflight`
-- slice-forecaster + DAG builder
+- slice-forecaster and DAG builder
 
 ## Design posture
 

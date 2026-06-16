@@ -11,7 +11,7 @@
 # CRITICAL PAIRING: change-gating creates the "required check skipped, PR
 # blocked forever" trap. ALWAYS pair with `aggregation-required-gate.yml`.
 #
-# Concrete instance: GitHub Actions + dorny/paths-filter. Other providers:
+# Concrete instance: GitHub Actions with dorny/paths-filter. Other providers:
 # GitLab `rules:changes:`, CircleCI path-filtering orb, Buildkite
 # `if: build.pull_request.paths`.
 # -----------------------------------------------------------------------------

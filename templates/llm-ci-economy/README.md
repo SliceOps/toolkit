@@ -8,7 +8,7 @@ Spec: `sliceops-spec/reference/patterns/llm-inference-cost-economy.md`.
 
 | File | Role |
 |---|---|
-| `llm-ci-economy.yml` | GitHub Actions workflow demonstrating the five levers + the LLM-aware draft gate (green-not-skipped). |
+| `llm-ci-economy.yml` | GitHub Actions workflow demonstrating the five levers and the LLM-aware draft gate (green-not-skipped). |
 
 ## The five levers (summary)
 
@@ -28,4 +28,4 @@ Spec: `sliceops-spec/reference/patterns/llm-inference-cost-economy.md`.
 
 ## Adopter instantiation
 
-Copy + set `vars.LLM_MODEL_MID_TIER` and `secrets.LLM_API_KEY`. Wire the actual API call honoring Levers A+B+C (cache directive on the stable block; model tier matches task complexity; input context is the diff). The toolkit's Layer 3 consistency validators include an `R-LLM-CI-COST` check (in `../consistency-validators/`) that fails a workflow YAML failing the four bright-line rules of this pattern.
+Copy and set `vars.LLM_MODEL_MID_TIER` and `secrets.LLM_API_KEY`. Wire the actual API call honoring Levers A, B, and C (cache directive on the stable block; model tier matches task complexity; input context is the diff). The toolkit's Layer 3 consistency validators include an `R-LLM-CI-COST` check (in `../consistency-validators/`) that fails a workflow YAML failing the four bright-line rules of this pattern.

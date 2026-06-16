@@ -3,7 +3,7 @@
 # SliceOps Layer B.1 — Band calibration reference implementation.
 #
 # Determinism-over-Regeneration (B.2): a fixed deterministic script, written
-# once and reused — NOT AI-regenerated per calibration. Same corpus + same
+# once and reused — NOT AI-regenerated per calibration. Same corpus and same
 # script-version -> same bands.
 #
 # Inputs: a directory of session .jsonl files (one session per file; each
@@ -12,7 +12,7 @@
 # that emit per-session jsonl logs.
 #
 # Outputs:
-#   - token-band percentiles (billed-equivalent + net-new) and proposed bands
+#   - token-band percentiles (billed-equivalent and net-new) and proposed bands
 #   - context-band percentiles (peak per-session footprint) and proposed bands
 #   - a single-line summary line for the band-calibration-register
 #
@@ -87,7 +87,7 @@ def percentiles(values, points=(25, 50, 75, 90, 95)):
 
 
 def propose_bands(p_context, p_billed):
-    """Anchor proposed bands to canonical breakpoints (model windows + spec)."""
+    """Anchor proposed bands to canonical breakpoints (model windows and spec)."""
     context_bands = [
         ("XS", "<32K"), ("S", "32-128K"), ("M", "128-200K"),
         ("L", "200-512K"), ("XL", ">512K"),
@@ -146,7 +146,7 @@ def main():
         print(f"  p{p:>2}: {v:>12}")
     print()
     bands = propose_bands(p_ctx, p_billed)
-    print("Proposed bands (anchored to canonical breakpoints + observed distribution):")
+    print("Proposed bands (anchored to canonical breakpoints and observed distribution):")
     for axis, bs in bands.items():
         print(f"  {axis}: {', '.join(f'{n}{r}' for n, r in bs)}")
     print()

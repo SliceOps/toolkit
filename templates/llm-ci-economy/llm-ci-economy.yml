@@ -14,7 +14,7 @@
 #      required check blocks the PR permanently).
 #
 # Pattern is vendor-agnostic; this is the GitHub Actions instance (Layer C.2).
-# Pairs with the CI guardrails template (concurrency-cancel + aggregation-gate).
+# Pairs with the CI guardrails template (concurrency-cancel and aggregation-gate).
 # Spec: sliceops-spec/reference/patterns/llm-inference-cost-economy.md
 # -----------------------------------------------------------------------------
 
@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Lever C — diff-only context windowing: shallow fetch + targeted diff.
+          # Lever C — diff-only context windowing: shallow fetch and targeted diff.
           # Full file fetch happens on-demand inside the audit logic only when
           # the reasoning requires it.
           fetch-depth: 0
@@ -65,7 +65,7 @@ jobs:
           git diff -U5 "$base...$head" > /tmp/diff.patch
           wc -c /tmp/diff.patch
 
-      - name: Run LLM audit (Levers A + B)
+      - name: Run LLM audit (Levers A and B)
         if: steps.draftgate.outputs.skip != 'true'
         env:
           # Lever B — model-tier discipline: prefer the cheapest tier adequate.
@@ -86,7 +86,7 @@ jobs:
           #
           # The concrete API call belongs to the adopter's stack — this
           # template documents the policy, the cost-ledger row, and the gate.
-          echo "TODO: adopter inserts the LLM call here, honoring Levers A+B+C."
+          echo "TODO: adopter inserts the LLM call here, honoring Levers A, B, and C."
           echo "     - cache directive set on the stable block"
           echo "     - model tier matches the task complexity"
           echo "     - input context is the diff, not full files"
@@ -97,5 +97,5 @@ jobs:
         if: always()
         run: |
           echo "::notice::cost-ledger LLM-API-in-CI dimension — adopter wires"
-          echo "          the actual token counts + tier here (see toolkit"
+          echo "          the actual token counts and tier here (see toolkit"
           echo "          cost-ledger template, LLM-API column)."

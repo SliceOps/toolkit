@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # SliceOps Layer B.1 — Layer 3 consistency validators (reference workflow).
 # Vendor-agnostic pattern; GitHub Actions instance (Layer C.2 per adopter).
-# Pairs with the CI guardrail templates (concurrency-cancel + aggregation-gate).
+# Pairs with the CI guardrail templates (concurrency-cancel and aggregation-gate).
 # Spec: sliceops-spec reference/r-rules/layer-3-validators.md
 name: consistency-validators
 
