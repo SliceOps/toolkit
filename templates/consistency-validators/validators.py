@@ -133,8 +133,11 @@ def check_counter_atomicity(root):
 
 PRINCIPLE_RE = re.compile(r"^##\s+P(\d+)\s+—", re.M)
 ENTITY_FILE_RE = re.compile(r"^(\d+)-[a-z0-9-]+\.md$")
+# Count CLAIMS only: the phrase "N canonical principles" or the full-set range
+# P1-P12. Band sub-ranges (P1-P3, P4-P10, ...) are NOT count claims — the
+# full-set alternative anchors on P12 so sub-ranges do not false-positive.
 COUNT_PRINCIPLE_RE = re.compile(
-    r"\b(\d+)\s+canonical\s+principles?\b|\bP1[-–]P(\d+)\b", re.I
+    r"\b(\d+)\s+canonical\s+principles?\b|\bP1\s*[-–]\s*P(12)\b", re.I
 )
 COUNT_ENTITY_RE = re.compile(
     # Only the plural form or a quantified specific-noun form is canonical
@@ -236,8 +239,17 @@ def check_band_unit(root):
                 body = fh.read()
         except OSError:
             continue
+        lines = body.splitlines()
         for m in BAND_UNIT_BAD_RE.finditer(body):
             line = body[: m.start()].count("\n") + 1
+            # Skip when the line documents the anti-pattern (corrective markers)
+            # rather than committing it — e.g. "... NOT total-with-cache;
+            # the canonical unit is billed-equivalent".
+            ctx = lines[line - 1].lower() if line - 1 < len(lines) else ""
+            if any(k in ctx for k in ("billed-equivalent", "inflates",
+                                      "canonical unit", "not total",
+                                      "instead of", "anti-pattern")):
+                continue
             rel = os.path.relpath(p, root)
             errs.append(
                 f"{rel}:{line}: token-band described as 'total-with-cache' "
