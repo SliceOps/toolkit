@@ -6,9 +6,9 @@
 # (PR / branch), cancel the in-progress run. Its savings scale with iteration
 # velocity — which is exactly SliceOps's normal mode (push-fix-push, many
 # parallel agents). This is the dominant cost lever and should be a BOOTSTRAP
-# DEFAULT in every workflow, never a post-incident retrofit (P12).
+# DEFAULT in every workflow, never a post-incident retrofit (P9).
 #
-# Materializes principle P12 (Shared-Resource Pre-flight): CI minutes are a
+# Materializes principle P9 (Shared-Resource Pre-flight): CI minutes are a
 # finite, serialized, shared resource that scales with PR_volume x workflow_weight.
 #
 # Concrete instance below: GitHub Actions. For other CI providers, apply the

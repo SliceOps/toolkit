@@ -4,7 +4,7 @@
 # =============================================================================
 # Pattern (vendor-agnostic): cache the package-manager store keyed by lockfile
 # hash so paid CI minutes are not spent re-downloading dependencies every run.
-# Shortens every run; compounds with iteration velocity (P12).
+# Shortens every run; compounds with iteration velocity (P9).
 #
 # Concrete instances below: GitHub Actions for npm / pip / NuGet. Other
 # providers: GitLab `cache:key:files`, CircleCI `restore_cache`/`save_cache`.

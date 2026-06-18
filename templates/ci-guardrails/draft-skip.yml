@@ -5,7 +5,7 @@
 # Pattern (vendor-agnostic): skip expensive jobs (AI audit, link-crawl, heavy
 # build, e2e) while a PR is in draft. Draft PRs are not mergeable anyway; run
 # the full suite on `ready_for_review`. Saves finite CI minutes during the
-# iterative drafting phase that dominates SliceOps work (P12).
+# iterative drafting phase that dominates SliceOps work (P9).
 #
 # Concrete instance: GitHub Actions (`github.event.pull_request.draft`). Other
 # providers: GitLab `$CI_MERGE_REQUEST_DRAFT`, or a label/title convention.

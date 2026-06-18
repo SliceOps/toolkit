@@ -91,7 +91,7 @@ jobs:
           echo "     - model tier matches the task complexity"
           echo "     - input context is the diff, not full files"
 
-      # Cost-ledger row (P5): emit a per-run cost estimate for the third
+      # Cost-ledger row (P6): emit a per-run cost estimate for the third
       # dimension of the cost-ledger (LLM-API-in-CI).
       - name: Emit cost-ledger row
         if: always()

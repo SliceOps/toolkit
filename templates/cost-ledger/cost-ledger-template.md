@@ -3,7 +3,7 @@
 > SliceOps cost-ledger with **three dimensions**: token cost, infra/CI cost, and LLM-API-in-CI cost.
 > A token-only ledger is blind to finite shared resources (CI minutes / API
 > quota / LLM-API spend) until they hard-stop the pipeline. This template
-> materializes P12 (Shared-Resource Pre-flight): the resource must be visible
+> materializes P9 (Shared-Resource Pre-flight): the resource must be visible
 > *before* it cuts. The LLM-API dimension was added when LLM-Inference-Cost-
 > Economy (B.2 sub-domain) formalized the LLM-API budget as a third resource
 > class with distinct dynamics (`PR velocity × push-frequency × prompt-size`).
@@ -23,13 +23,13 @@ Token-band measured in **billed-equivalent** (input + cache_creation × 1.25 + c
 |---|---|---|---|---|---|
 | BL-NN.SL-NNN | M | L | 8M | — | — |
 
-## Infra / CI dimension (P12)
+## Infra / CI dimension (P9)
 
 | Period | CI minutes used | Budget | Headroom | Alert threshold hit? |
 |---|---|---|---|---|
 | YYYY-MM | — | — | — | no |
 
-## LLM-API-in-CI dimension (P12 and LLM-Inference-Cost-Economy)
+## LLM-API-in-CI dimension (P9 and LLM-Inference-Cost-Economy)
 
 LLM API spend in CI-time audit / code-review / QA / codegen workflows. Scales with `PR velocity × push-frequency × prompt-size` — dynamics distinct from token-throughput and infra-minutes. Per-row: declare model tier, input-context shape (diff vs full file), whether the stable block is cached.
 
@@ -37,7 +37,7 @@ LLM API spend in CI-time audit / code-review / QA / codegen workflows. Scales wi
 |---|---|---|---|---|---|---|---|---|
 | llm-audit (PRs) | mid-tier | yes | diff-only | — | $— | $— | — | no |
 
-**Pre-Block checklist (P12 — mandatory before scaling parallelism past the
+**Pre-Block checklist (P9 — mandatory before scaling parallelism past the
 last Block-Retrospective baseline):**
 
 - [ ] Enumerate finite/serialized shared resources this Block consumes
@@ -57,7 +57,7 @@ last Block-Retrospective baseline):**
 - [ ] Default for every shared resource = cap+alert, never silent hard-stop
       ("warned degradation" > "invisible hard-cut")
 
-## Anti-patterns (P12 and LLM-Inference-Cost-Economy)
+## Anti-patterns (P9 and LLM-Inference-Cost-Economy)
 
 - Spending limit `$0` / default quota leads to "exhaust resource" becoming "invisible
   hard-cut" instead of "warned degradation"
