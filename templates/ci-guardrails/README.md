@@ -1,6 +1,6 @@
 # CI Guardrails — Layer B.2 reference templates
 
-Reference implementation of the **CI/Pipeline Cost Economy** Universal Engineering Pattern (Layer B.2), materializing principle **P12 — Shared-Resource Pre-flight**.
+Reference implementation of the **CI/Pipeline Cost Economy** Universal Engineering Pattern (Layer B.2), materializing principle **P9 — Shared-Resource Pre-flight**.
 
 These are **bootstrap defaults**, not post-incident retrofits. SliceOps's defining mode is aggressive multi-agent parallelism (Wedge B); CI minutes are a finite, serialized, shared resource that scales with `PR_volume × workflow_weight`. Without these guardrails the framework's main lever silently exhausts the resource (observed empirically: a hardening block hard-stopped an entire pipeline when the included CI minutes ran out under a `$0` default spending limit).
 

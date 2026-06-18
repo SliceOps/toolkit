@@ -9,7 +9,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
-# Layer B.2 CI/Pipeline Cost Economy — concurrency cancel-in-progress (P12)
+# Layer B.2 CI/Pipeline Cost Economy — concurrency cancel-in-progress (P9)
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

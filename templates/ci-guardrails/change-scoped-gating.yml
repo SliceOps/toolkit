@@ -6,7 +6,7 @@
 # whether the PR actually touches code. A large fraction of SliceOps PRs are
 # markdown / orchestration / state (DECs, trackers, spawn-prompts) — those must
 # NOT trigger heavy compute. Without gating, a docs PR burns the same finite CI
-# minutes as a heavy code PR (P12 anti-pattern).
+# minutes as a heavy code PR (P9 anti-pattern).
 #
 # CRITICAL PAIRING: change-gating creates the "required check skipped, PR
 # blocked forever" trap. ALWAYS pair with `aggregation-required-gate.yml`.
