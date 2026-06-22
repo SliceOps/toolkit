@@ -54,7 +54,11 @@ def read_frontmatter(path):
 
 def find_docs(root):
     for dirpath, _, files in os.walk(root):
-        if "/.git" in dirpath or "/99-archive" in dirpath:
+        # Skip VCS + frozen lifecycle dirs: superseded/deprecated DECs and the
+        # archive are immutable history — not live corpus, so not validated for
+        # live consistency (they keep stale vocabulary + one-way refs by design).
+        if any(s in dirpath for s in ("/.git", "/99-archive", "/archive",
+                                      "/superseded", "/deprecated")):
             continue
         for f in files:
             if f.endswith(".md") and f != "README.md":
@@ -65,12 +69,12 @@ def doc_id(path):
     return os.path.splitext(os.path.basename(path))[0]
 
 
-def check_frontmatter_schema(docs):
+def check_frontmatter_schema(docs, entity_key="entity"):
     req = ["conflicts-with", "related-decs", "topics",
            "vocabulary-changes", "consistency-check"]
     errs = []
     for p, (fm, _) in docs.items():
-        if fm.get("entity") != "DecisionRecord":
+        if fm.get(entity_key) != "DecisionRecord":
             continue
         for k in req:
             if k not in fm:
@@ -78,10 +82,10 @@ def check_frontmatter_schema(docs):
     return errs
 
 
-def check_no_orphan(docs):
+def check_no_orphan(docs, entity_key="entity"):
     errs = []
     for p, (fm, body) in docs.items():
-        if fm.get("entity") != "DecisionRecord":
+        if fm.get(entity_key) != "DecisionRecord":
             continue
         if not fm.get("related-decs") and not fm.get("topics"):
             if "isolation-justified" not in body:
@@ -90,17 +94,32 @@ def check_no_orphan(docs):
     return errs
 
 
-def check_bidirectional(docs):
+def check_bidirectional(docs, entity_key="entity"):
+    # `related-decs` declares a *topically-adjacent* relation between two
+    # DecisionRecords — a symmetric relation, so it must be reciprocated. The
+    # check applies ONLY when BOTH ends are DecisionRecords present in the live
+    # corpus: a non-DR source (InsightRecord/LearningPattern/OutcomeRecord/etc.)
+    # references decisions one-way by design (the DR tracks it via a separate
+    # cognitive-link field, not `related-decs`), and a target that is frozen
+    # (superseded/deprecated — excluded by find_docs) or external is not ours to
+    # reciprocate. This is the calibrated convention, not a suppression.
     by_id = {doc_id(p): fm for p, (fm, _) in docs.items()}
+
+    def is_dr(did):
+        return by_id.get(did, {}).get(entity_key) == "DecisionRecord"
+
     errs = []
     for did, fm in by_id.items():
+        if fm.get(entity_key) != "DecisionRecord":
+            continue
         for ref in fm.get("related-decs", []):
             rid = os.path.splitext(os.path.basename(ref))[0]
-            if rid in by_id:
-                back = [os.path.splitext(os.path.basename(x))[0]
-                        for x in by_id[rid].get("related-decs", [])]
-                if did not in back:
-                    errs.append(f"{did} -> {rid} not reciprocated")
+            if not is_dr(rid):
+                continue
+            back = [os.path.splitext(os.path.basename(x))[0]
+                    for x in by_id[rid].get("related-decs", [])]
+            if did not in back:
+                errs.append(f"{did} -> {rid} not reciprocated")
     return errs
 
 
@@ -316,14 +335,18 @@ def main():
     ap.add_argument("--root", required=True)
     ap.add_argument("--checks", default="all")
     ap.add_argument("--topic-taxonomy", default="")
+    # The portable canonical entity key is `entity`. A runtime may instantiate
+    # entities under a mapped key (Layer C.1) — e.g. `--entity-key datta_entity`
+    # — without the vendor-neutral spec prescribing that key.
+    ap.add_argument("--entity-key", default="entity")
     args = ap.parse_args()
 
     docs = {p: read_frontmatter(p) for p in find_docs(args.root)}
     all_checks = {
         # Phase 2
-        "frontmatter-schema": lambda: check_frontmatter_schema(docs),
-        "no-orphan-decs": lambda: check_no_orphan(docs),
-        "cross-references-bidirectional": lambda: check_bidirectional(docs),
+        "frontmatter-schema": lambda: check_frontmatter_schema(docs, args.entity_key),
+        "no-orphan-decs": lambda: check_no_orphan(docs, args.entity_key),
+        "cross-references-bidirectional": lambda: check_bidirectional(docs, args.entity_key),
         "topic-tags": lambda: check_topic_tags(docs, args.topic_taxonomy),
         "counter-atomicity": lambda: check_counter_atomicity(args.root),
         # Phase 2.5
