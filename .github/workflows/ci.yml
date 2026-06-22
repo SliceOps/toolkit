@@ -39,12 +39,10 @@ jobs:
         run: python3 -m unittest discover -s tests -v
 
       - name: Run the validators on this repo (self-application)
-        # Corpus-agnostic checks: this repo ships templates, not a DEC corpus or
-        # a topic taxonomy, so topic-tags/frontmatter-schema do not apply here.
+        # --checks all: this repo has no DEC corpus or topic taxonomy, so
+        # topic-tags reports SKIPPED (green) and the DEC checks pass vacuously.
         run: |
-          python3 templates/consistency-validators/validators.py \
-            --root . \
-            --checks counter-atomicity,principle-count-coherence,entity-count-coherence,band-unit,llm-ci-cost
+          python3 templates/consistency-validators/validators.py --root . --checks all
 
       - name: Secrets scan (gitleaks)
         # Working-tree scan; fails the job on any finding. Pinned image for

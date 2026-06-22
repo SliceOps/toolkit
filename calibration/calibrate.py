@@ -79,24 +79,63 @@ def session_metrics(path):
     return peak_context, int(billed_eq), net_new, turns
 
 
+MIN_SAMPLE = 8  # below this, percentiles are advisory only (flagged in output)
+
+
 def percentiles(values, points=(25, 50, 75, 90, 95)):
+    """Percentiles clamped to the observed range, using the *inclusive* method
+    (interpolates within [min, max]). The default 'exclusive' method assumes the
+    data is a sample of a larger population and can return a percentile ABOVE the
+    largest observed value (or below the smallest) on small corpora — misleading
+    in an audit. Inclusive + clamp guarantees min <= pN <= max; n==1 is handled."""
     if not values:
         return {p: 0 for p in points}
-    qs = quantiles(values, n=100)
-    return {p: int(qs[p - 1]) for p in points}
+    vals = sorted(values)
+    lo, hi = vals[0], vals[-1]
+    if len(vals) == 1:
+        return {p: int(lo) for p in points}
+    qs = quantiles(vals, n=100, method="inclusive")
+    return {p: int(min(max(qs[p - 1], lo), hi)) for p in points}
 
 
-def propose_bands(p_context, p_billed):
-    """Anchor proposed bands to canonical breakpoints (model windows and spec)."""
-    context_bands = [
-        ("XS", "<32K"), ("S", "32-128K"), ("M", "128-200K"),
-        ("L", "200-512K"), ("XL", ">512K"),
+def canonical_bands():
+    """The FIXED canonical breakpoints from the spec (model windows + baseline).
+    These are the reference; calibration compares the observed distribution
+    against them — it does not move them automatically. Renamed from the former
+    `propose_bands`, which misleadingly accepted percentiles it never used."""
+    return {
+        "context-band": [
+            ("XS", "<32K"), ("S", "32-128K"), ("M", "128-200K"),
+            ("L", "200-512K"), ("XL", ">512K"),
+        ],
+        "token-band": [
+            ("XS", "<2M"), ("S", "2-5M"), ("M", "5-10M"),
+            ("L", "10-20M"), ("XL", ">20M"),
+        ],
+    }
+
+
+def _fmt(n):
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{round(n / 1000)}K"
+    return str(int(n))
+
+
+def observed_bands(p):
+    """Data-driven band edges derived from THIS corpus's percentiles
+    (p25/p50/p75/p90) — the actual proposal. Compare against canonical_bands()
+    to decide whether the canon needs recalibration. Percentiles are genuinely
+    used here (the former function ignored them)."""
+    e = [p[25], p[50], p[75], p[90]]
+    return [
+        ("XS", f"<{_fmt(e[0])}"),
+        ("S", f"{_fmt(e[0])}-{_fmt(e[1])}"),
+        ("M", f"{_fmt(e[1])}-{_fmt(e[2])}"),
+        ("L", f"{_fmt(e[2])}-{_fmt(e[3])}"),
+        ("XL", f">{_fmt(e[3])}"),
     ]
-    token_bands = [
-        ("XS", "<2M"), ("S", "2-5M"), ("M", "5-10M"),
-        ("L", "10-20M"), ("XL", ">20M"),
-    ]
-    return {"context-band": context_bands, "token-band": token_bands}
 
 
 def main():
@@ -125,6 +164,10 @@ def main():
         print(f"::error::no sessions found under {args.root}", file=sys.stderr)
         sys.exit(2)
 
+    if n_sessions < MIN_SAMPLE:
+        print(f"::warning::small sample (N={n_sessions} < {MIN_SAMPLE}) — "
+              f"percentiles are advisory and clamped to the observed range.\n")
+
     p_ctx = percentiles(contexts)
     p_billed = percentiles(billeds)
     p_netnew = percentiles(netnews)
@@ -145,10 +188,13 @@ def main():
     for p, v in p_netnew.items():
         print(f"  p{p:>2}: {v:>12}")
     print()
-    bands = propose_bands(p_ctx, p_billed)
-    print("Proposed bands (anchored to canonical breakpoints and observed distribution):")
-    for axis, bs in bands.items():
-        print(f"  {axis}: {', '.join(f'{n}{r}' for n, r in bs)}")
+    print("Canonical bands (spec reference — fixed):")
+    for axis, bs in canonical_bands().items():
+        print(f"  {axis}: {', '.join(f'{n} {r}' for n, r in bs)}")
+    print()
+    print("Observed bands (data-driven from this corpus's p25/p50/p75/p90):")
+    print(f"  context-band: {', '.join(f'{n} {r}' for n, r in observed_bands(p_ctx))}")
+    print(f"  token-band:   {', '.join(f'{n} {r}' for n, r in observed_bands(p_billed))}")
     print()
     print("Register one-line summary (copy into band-calibration-register.md):")
     print(
