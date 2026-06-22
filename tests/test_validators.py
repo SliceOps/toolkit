@@ -200,5 +200,95 @@ class BidirectionalConvention(unittest.TestCase):
             self.assertEqual(len(errs), 1)
 
 
+class PathPortability(unittest.TestCase):
+    def test_norm_parts_membership(self):
+        p = os.path.join("a", ".git", "b")
+        self.assertIn(".git", v._norm_parts(p))
+
+    def test_find_docs_skips_frozen_and_git(self):
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "decisions/accepted/DR-x.md", "x")
+            _write(d, "decisions/superseded/DR-old.md", "x")
+            _write(d, ".git/hooks/note.md", "x")
+            found = {os.path.basename(p) for p in v.find_docs(d)}
+            self.assertEqual(found, {"DR-x.md"})
+
+    def test_iter_workflows_matches_dir_and_name(self):
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, ".github/workflows/ci.yml", "x")
+            _write(d, "templates/my-workflow.yml", "x")
+            _write(d, "notes/plain.yml", "x")
+            found = {os.path.basename(p) for p in v.iter_workflows(d)}
+            self.assertEqual(found, {"ci.yml", "my-workflow.yml"})
+
+
+class TopicTagsSemantics(unittest.TestCase):
+    def test_unconfigured_is_skip_not_error(self):
+        self.assertIsNone(v.check_topic_tags({}, ""))
+
+    def test_configured_but_missing_is_error(self):
+        errs = v.check_topic_tags({}, "/no/such/taxonomy.md")
+        self.assertTrue(errs and "not found" in errs[0])
+
+    def test_valid_taxonomy_flags_unknown_topic(self):
+        with tempfile.TemporaryDirectory() as d:
+            tax = _write(d, "topics.md", "### alpha\n### beta\n")
+            docs = {"x.md": ({"topics": ["alpha", "zzz"]}, "")}
+            errs = v.check_topic_tags(docs, tax)
+            self.assertEqual(len(errs), 1)
+            self.assertIn("zzz", errs[0])
+
+
+class FrontmatterFallback(unittest.TestCase):
+    def test_minimal_parser_subset(self):
+        orig = v._yaml
+        v._yaml = None  # force the stdlib fallback path
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                p = _write(d, "x.md",
+                           "---\nentity: DecisionRecord  # inline comment\n"
+                           "topics: [a, b]\n"
+                           "related-decs:\n  - DR-1\n  - DR-2\n---\nBODY")
+                fm, body = v.read_frontmatter(p)
+                self.assertEqual(fm["entity"], "DecisionRecord")
+                self.assertEqual(fm["topics"], ["a", "b"])
+                self.assertEqual(fm["related-decs"], ["DR-1", "DR-2"])
+                self.assertIn("BODY", body)
+        finally:
+            v._yaml = orig
+
+
+class LlmCiCost(unittest.TestCase):
+    def _wf(self, d, body):
+        return _write(d, ".github/workflows/ai.yml", body)
+
+    def test_endpoint_only_in_comment_not_flagged(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._wf(d, "# example only: api.anthropic.com\nname: ci\non: pull_request\n")
+            self.assertEqual(v.check_llm_ci_cost(d), [])
+
+    def test_missing_concurrency_flagged(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._wf(d, "name: ai\non:\n  pull_request:\n    types: [opened]\n"
+                        "jobs:\n  x:\n    steps:\n      - run: curl api.anthropic.com\n")
+            self.assertTrue(any("cancel-in-progress" in e
+                                for e in v.check_llm_ci_cost(d)))
+
+    def test_with_concurrency_ok(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._wf(d, "name: ai\non:\n  pull_request:\n    types: [opened]\n"
+                        "concurrency:\n  group: x\n  cancel-in-progress: true\n"
+                        "jobs:\n  x:\n    steps:\n      - run: curl api.anthropic.com\n")
+            self.assertFalse(any("cancel-in-progress" in e
+                                 for e in v.check_llm_ci_cost(d)))
+
+    def test_synchronize_flagged(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._wf(d, "name: ai\non:\n  pull_request:\n    types: [opened, synchronize]\n"
+                        "concurrency:\n  group: x\n  cancel-in-progress: true\n"
+                        "jobs:\n  x:\n    steps:\n      - run: curl api.anthropic.com\n")
+            self.assertTrue(any("synchronize" in e for e in v.check_llm_ci_cost(d)))
+
+
 if __name__ == "__main__":
     unittest.main()

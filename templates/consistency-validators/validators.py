@@ -10,8 +10,9 @@
 # Usage:
 #   python3 validators.py --root <corpus-root> [--checks all|<name,...>]
 #
-# Stdlib only (no third-party YAML dep) — minimal frontmatter parsing keeps the
-# starter portable. Adopters may swap in a real YAML parser.
+# Stdlib only by default. If PyYAML is importable it is used for robust
+# frontmatter + workflow parsing; otherwise a minimal stdlib parser handles the
+# documented subset (see read_frontmatter). No dependency is REQUIRED.
 
 import argparse
 import os
@@ -19,18 +20,51 @@ import re
 import sys
 from collections import defaultdict
 
+try:  # optional: robust YAML when present, stdlib fallback otherwise
+    import yaml as _yaml
+except ImportError:  # pragma: no cover
+    _yaml = None
+
 FM = re.compile(r"^---\n(.*?)\n---", re.S)
 
 
+def _norm_parts(path):
+    """Path segments, OS-agnostic (os.walk yields '\\' on Windows, '/' elsewhere)."""
+    return set(os.path.normpath(path).split(os.sep))
+
+
+# Frozen lifecycle dirs: immutable history, not live corpus (excluded everywhere).
+_SKIP_DIRS = {".git", "99-archive", "archive", "superseded", "deprecated"}
+_WF_MARKER = os.path.join(".github", "workflows")
+
+
 def read_frontmatter(path):
+    """Parse YAML frontmatter into (dict, body).
+
+    Uses PyYAML when importable. The stdlib fallback supports the documented
+    subset used across SliceOps artifacts: `key: scalar`, inline `key: [a, b]`,
+    block lists (`- item` under a key), `#` comments and trailing inline
+    comments. It does NOT handle nested maps, multi-line block scalars (`|`/`>`),
+    or inline `{}` maps — install PyYAML, or keep frontmatter within the subset,
+    if you need those.
+    """
     with open(path, encoding="utf-8") as fh:
         text = fh.read()
     m = FM.match(text)
     if not m:
         return {}, text
-    fm, body = {}, text[m.end():]
-    key = None
-    for line in m.group(1).splitlines():
+    fm_text, body = m.group(1), text[m.end():]
+
+    if _yaml is not None:
+        try:
+            data = _yaml.safe_load(fm_text)
+            if isinstance(data, dict):
+                return {k: ([] if v is None else v) for k, v in data.items()}, body
+        except _yaml.YAMLError:
+            pass  # fall through to the minimal parser
+
+    fm, key = {}, None
+    for line in fm_text.splitlines():
         if re.match(r"^\s*#", line) or not line.strip():
             continue
         kv = re.match(r"^([A-Za-z0-9_-]+):\s*(.*)$", line)
@@ -40,25 +74,24 @@ def read_frontmatter(path):
             if val.startswith("[") and val.endswith("]"):
                 items = [x.strip().strip("'\"") for x in val[1:-1].split(",")]
                 fm[key] = [x for x in items if x]
-            elif val:
-                fm[key] = val.strip("'\"")
+            elif val and not val.startswith("#"):
+                fm[key] = val.split(" #")[0].strip().strip("'\"")
             else:
                 fm[key] = []
         elif key and re.match(r"^\s*-\s+", line):
             fm.setdefault(key, [])
             if not isinstance(fm[key], list):
                 fm[key] = []
-            fm[key].append(re.sub(r"^\s*-\s+", "", line).strip().strip("'\""))
+            item = re.sub(r"^\s*-\s+", "", line).split(" #")[0].strip()
+            fm[key].append(item.strip("'\""))
     return fm, body
 
 
 def find_docs(root):
     for dirpath, _, files in os.walk(root):
-        # Skip VCS + frozen lifecycle dirs: superseded/deprecated DECs and the
-        # archive are immutable history — not live corpus, so not validated for
-        # live consistency (they keep stale vocabulary + one-way refs by design).
-        if any(s in dirpath for s in ("/.git", "/99-archive", "/archive",
-                                      "/superseded", "/deprecated")):
+        # Skip VCS + frozen lifecycle dirs (immutable history, not live corpus).
+        # OS-agnostic part match — os.walk yields '\\' on Windows.
+        if _norm_parts(dirpath) & _SKIP_DIRS:
             continue
         for f in files:
             if f.endswith(".md") and f != "README.md":
@@ -124,8 +157,12 @@ def check_bidirectional(docs, entity_key="entity"):
 
 
 def check_topic_tags(docs, taxonomy_path):
-    if not taxonomy_path or not os.path.exists(taxonomy_path):
-        return ["topic-tags: taxonomy file not found (skipped — configure path)"]
+    # Not configured → genuinely skip (return None; main reports SKIPPED, green).
+    if not taxonomy_path:
+        return None
+    # Configured but missing → a real misconfiguration, not a skip.
+    if not os.path.exists(taxonomy_path):
+        return [f"topic-tags: configured taxonomy not found: {taxonomy_path}"]
     with open(taxonomy_path, encoding="utf-8") as fh:
         canon = set(re.findall(r"^###\s+([a-z0-9-]+)", fh.read(), re.M))
     errs = []
@@ -143,7 +180,7 @@ def check_counter_atomicity(root):
     # not be mis-read as a counter and false-positive every same-year file.
     seen = defaultdict(list)
     for dirpath, _, files in os.walk(root):
-        if "/.git" in dirpath:
+        if ".git" in _norm_parts(dirpath):
             continue
         for f in files:
             if re.match(r"^[A-Za-z]+-\d{4}-\d{2}-\d{2}-", f):
@@ -284,14 +321,36 @@ def check_band_unit(root):
 
 
 def iter_workflows(root):
+    seen = set()
     for dirpath, _, files in os.walk(root):
-        if ".github/workflows" in dirpath:
-            for f in files:
-                if f.endswith(".yml") or f.endswith(".yaml"):
-                    yield os.path.join(dirpath, f)
+        in_wf_dir = _WF_MARKER in os.path.normpath(dirpath)
         for f in files:
-            if f.endswith(".yml") and "workflow" in f.lower():
-                yield os.path.join(dirpath, f)
+            if not (f.endswith(".yml") or f.endswith(".yaml")):
+                continue
+            if in_wf_dir or "workflow" in f.lower():
+                p = os.path.join(dirpath, f)
+                if p not in seen:
+                    seen.add(p)
+                    yield p
+
+
+def _strip_yaml_comments(text):
+    """Drop `#` comments not inside quotes — so comment/doc text never trips the
+    content heuristics below."""
+    out = []
+    for line in text.splitlines():
+        in_s = in_d = False
+        cut = None
+        for i, ch in enumerate(line):
+            if ch == "'" and not in_d:
+                in_s = not in_s
+            elif ch == '"' and not in_s:
+                in_d = not in_d
+            elif ch == "#" and not in_s and not in_d:
+                cut = i
+                break
+        out.append(line if cut is None else line[:cut])
+    return "\n".join(out)
 
 
 def check_llm_ci_cost(root):
@@ -302,31 +361,55 @@ def check_llm_ci_cost(root):
           `if: ... draft == false` that would skip the whole job — a step-
           level gate setting an output is the right shape)."""
     errs = []
-    seen = set()
     for p in iter_workflows(root):
-        if p in seen:
-            continue
-        seen.add(p)
         try:
             with open(p, encoding="utf-8") as fh:
-                body = fh.read()
+                raw = fh.read()
         except OSError:
             continue
-        if not LLM_ENDPOINT_RE.search(body):
+        code = _strip_yaml_comments(raw)        # ignore comments/docs
+        if not LLM_ENDPOINT_RE.search(code):
             continue
         rel = os.path.relpath(p, root)
-        if "cancel-in-progress: true" not in body:
+
+        data = None
+        if _yaml is not None:
+            try:
+                data = _yaml.safe_load(raw)
+            except _yaml.YAMLError:
+                data = None
+        struct = isinstance(data, dict)
+
+        # (1) concurrency cancel-in-progress — structural when possible
+        if struct:
+            conc = data.get("concurrency")
+            cancel = isinstance(conc, dict) and conc.get("cancel-in-progress") is True
+        else:
+            cancel = "cancel-in-progress: true" in code
+        if not cancel:
             errs.append(f"{rel}: paid-LLM workflow missing "
-                        f"`concurrency: cancel-in-progress: true`")
-        if "synchronize" in body and "synchronize-allowed" not in body:
+                        f"`concurrency.cancel-in-progress: true`")
+
+        # (2) synchronize trigger — note YAML parses the `on:` key as boolean True
+        if struct:
+            on = data.get("on", data.get(True))
+            pr = on.get("pull_request") if isinstance(on, dict) else None
+            types = pr.get("types") or [] if isinstance(pr, dict) else []
+            has_sync = "synchronize" in types
+        else:
+            has_sync = "synchronize" in code
+        if has_sync and "synchronize-allowed" not in raw:
             errs.append(f"{rel}: `synchronize` trigger on paid-LLM workflow "
-                        f"without `# synchronize-allowed: <ref>` exception")
-        # Heuristic: encourage step-level draft gating (skip output feeding if guards)
-        if ("draft == false" in body or "draft: false" in body) \
-                and "skip=true" not in body:
-            errs.append(f"{rel}: top-level draft skip risks `skipped` "
-                        f"required-check (use a step-level gate that emits "
-                        f"`skip=true` so the job exits green)")
+                        f"without a `# synchronize-allowed: <ref>` exception")
+
+        # (3) draft gating — heuristic (job/step shapes vary too much to assert
+        # structurally); flag a job-level draft skip that would yield a `skipped`
+        # required check instead of a green step-level gate.
+        if ("draft == false" in code or "draft: false" in code) \
+                and "skip=true" not in code:
+            errs.append(f"{rel}: job-level draft skip risks a `skipped` required "
+                        f"check — use a step-level gate emitting `skip=true` so "
+                        f"the job still exits green")
     return errs
 
 
@@ -362,7 +445,9 @@ def main():
     failed = False
     for name, fn in selected.items():
         errs = fn()
-        if errs:
+        if errs is None:                      # genuine skip (e.g. topic-tags unconfigured)
+            print(f"[{name}] SKIPPED")
+        elif errs:
             failed = True
             print(f"::error::[{name}] {len(errs)} issue(s):")
             for e in errs:

@@ -2,7 +2,7 @@
 
 > CI guardrail templates, validators, and tooling for SliceOps™ adopters.
 
-**Status: public · v0.1.0.** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DR-2026-06-15-sliceops-license-ratification`).
+**Status: public · v0.1.1.** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DR-2026-06-15-sliceops-license-ratification`).
 
 ## What's here
 
@@ -11,8 +11,8 @@
 | `templates/ci-guardrails/` | **Layer B.2 CI/Pipeline Cost Economy** reference templates (5 levers) — bootstrap defaults materializing P9 Shared-Resource Pre-flight |
 | `templates/llm-ci-economy/` | **Layer B.2 sub-domain LLM-Inference-Cost-Economy** — workflow demonstrating prompt-caching, model-tier, diff-only context, trigger-set minimalism LLM-aware, and green-not-skipped draft gate |
 | `templates/cost-ledger/` | **Layer B.1** cost-ledger template with three dimensions: token (billed-equivalent), infra/CI, and LLM-API-in-CI (P9) |
-| `templates/consistency-validators/` | **Layer B.1 Layer 3** consistency validators — workflow and deterministic `validators.py` (cross-references-bidirectional, no-orphan-decs, frontmatter-schema, topic-tags, counter-atomicity) |
-| `calibration/` | **Layer B.1 Calibration discipline** — deterministic `calibrate.py` (stdlib) parses session `.jsonl`, then percentiles, then bands; `band-calibration-register.md` is the append-only audit trail (v1 baseline 2026-06-15) |
+| `templates/consistency-validators/` | **Layer B.1 Layer 3** consistency validators — workflow + deterministic `validators.py` (9 checks: frontmatter-schema, no-orphan-decs, cross-references-bidirectional, topic-tags, counter-atomicity, principle/entity-count-coherence, band-unit, llm-ci-cost). Stdlib-only; uses PyYAML automatically when installed |
+| `calibration/` | **Layer B.1 Calibration discipline** — deterministic `calibrate.py` (stdlib) parses session `.jsonl` → percentiles (clamped to the observed range) → **canonical** + data-driven **observed** bands; `band-calibration-register.md` is the append-only audit trail |
 
 ## Use it
 
@@ -39,7 +39,7 @@ python3 calibration/calibrate.py --root path/to/session-jsonl/ --label my-baseli
 
 **4. Track cost** with the three-dimension [`templates/cost-ledger/`](templates/cost-ledger/) template (token billed-equivalent + infra/CI + LLM-API-in-CI).
 
-> Design posture: these are **reference templates you adapt**, not a black-box dependency — bind `--root` and the conventions to your layout, swap the stdlib frontmatter parser for a real YAML one if you prefer, and so on.
+> Design posture: these are **reference templates you adapt**, not a black-box dependency — bind `--root` and the conventions to your layout. The validator is stdlib-only but **uses PyYAML automatically when it's installed** (robust parsing), falling back to a documented YAML subset otherwise; path checks are OS-agnostic (Windows/Linux); an unconfigured `--topic-taxonomy` reports `SKIPPED` (green), a *configured-but-missing* one is a hard error.
 
 ## Roadmap (pending)
 
