@@ -118,12 +118,18 @@ def check_topic_tags(docs, taxonomy_path):
 
 
 def check_counter_atomicity(root):
+    # Counter collisions apply to COUNTER-based artifacts (INS-NNN, LP-NNN,
+    # HANDOFF-NNN, DEC-NNN, SL-NNN). DATE-based slugs (DR-/CF-YYYY-MM-DD-...)
+    # carry no counter — their uniqueness is the date+slug — so the year must
+    # not be mis-read as a counter and false-positive every same-year file.
     seen = defaultdict(list)
     for dirpath, _, files in os.walk(root):
         if "/.git" in dirpath:
             continue
         for f in files:
-            m = re.match(r"^([A-Z]+)-(\d+)", f)
+            if re.match(r"^[A-Za-z]+-\d{4}-\d{2}-\d{2}-", f):
+                continue  # date-based naming, no counter to collide
+            m = re.match(r"^([A-Z]+)-0*(\d+)(?:[-.]|$)", f)
             if m:
                 seen[(m.group(1), m.group(2))].append(os.path.join(dirpath, f))
     errs = [f"counter collision {pfx}-{num}: {paths}"
