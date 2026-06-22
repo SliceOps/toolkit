@@ -143,5 +143,62 @@ class Frontmatter(unittest.TestCase):
             self.assertEqual(len(errs), 5)
 
 
+def _dr(related, entity_key="entity"):
+    body = "---\n%s: DecisionRecord\n" % entity_key
+    if related:
+        body += "related-decs:\n" + "".join("  - %s\n" % r for r in related)
+    else:
+        body += "related-decs: []\n"
+    return body + "---\nbody"
+
+
+class BidirectionalConvention(unittest.TestCase):
+    def test_reciprocated_dr_pair_passes(self):
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "decisions/accepted/DR-A.md", _dr(["DR-B"]))
+            _write(d, "decisions/accepted/DR-B.md", _dr(["DR-A"]))
+            docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
+            self.assertEqual(v.check_bidirectional(docs), [])
+
+    def test_one_way_dr_pair_is_caught(self):
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "decisions/accepted/DR-A.md", _dr(["DR-B"]))
+            _write(d, "decisions/accepted/DR-B.md", _dr([]))
+            docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
+            errs = v.check_bidirectional(docs)
+            self.assertEqual(len(errs), 1)
+            self.assertIn("DR-A -> DR-B", errs[0])
+
+    def test_non_dr_source_is_one_way_ok(self):
+        # An InsightRecord referencing a DR must NOT require the DR to reciprocate.
+        with tempfile.TemporaryDirectory() as d:
+            ins = "---\nentity: InsightRecord\nrelated-decs:\n  - DR-A\n---\nbody"
+            _write(d, "insights/INS-1.md", ins)
+            _write(d, "decisions/accepted/DR-A.md", _dr([]))
+            docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
+            self.assertEqual(v.check_bidirectional(docs), [])
+
+    def test_frozen_target_is_skipped(self):
+        # A live DR referencing a superseded DR: the frozen doc is excluded by
+        # find_docs, so the edge is not enforced.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "decisions/accepted/DR-A.md", _dr(["DR-OLD"]))
+            _write(d, "decisions/superseded/DR-OLD.md", _dr([]))
+            docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
+            self.assertEqual(v.check_bidirectional(docs), [])
+
+    def test_custom_entity_key(self):
+        # Runtime-mapped entity key (e.g. datta_entity) is honored.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "decisions/accepted/DR-A.md", _dr(["DR-B"], "datta_entity"))
+            _write(d, "decisions/accepted/DR-B.md", _dr([], "datta_entity"))
+            docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
+            # Default key 'entity' → sources unrecognized → no enforcement.
+            self.assertEqual(v.check_bidirectional(docs), [])
+            # Mapped key → the one-way pair is caught.
+            errs = v.check_bidirectional(docs, "datta_entity")
+            self.assertEqual(len(errs), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
