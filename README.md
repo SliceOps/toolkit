@@ -2,7 +2,7 @@
 
 > CI guardrail templates, validators, and tooling for SliceOps™ adopters.
 
-**Status: public — scaffolding in progress.** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DR-2026-06-15-sliceops-license-ratification`).
+**Status: public · v0.1.0.** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DR-2026-06-15-sliceops-license-ratification`).
 
 ## What's here
 
@@ -13,6 +13,33 @@
 | `templates/cost-ledger/` | **Layer B.1** cost-ledger template with three dimensions: token (billed-equivalent), infra/CI, and LLM-API-in-CI (P9) |
 | `templates/consistency-validators/` | **Layer B.1 Layer 3** consistency validators — workflow and deterministic `validators.py` (cross-references-bidirectional, no-orphan-decs, frontmatter-schema, topic-tags, counter-atomicity) |
 | `calibration/` | **Layer B.1 Calibration discipline** — deterministic `calibrate.py` (stdlib) parses session `.jsonl`, then percentiles, then bands; `band-calibration-register.md` is the append-only audit trail (v1 baseline 2026-06-15) |
+
+## Use it
+
+Everything here is **stdlib-only Python 3 (3.9+)** and plain YAML — no install, no dependencies.
+
+**1. Run the consistency validators** on your corpus (exit code is non-zero on any finding, so it drops straight into CI):
+
+```bash
+python3 templates/consistency-validators/validators.py \
+  --root . --checks all \
+  --topic-taxonomy path/to/your/topics.md
+# a runtime that tags entities under a mapped frontmatter key:  --entity-key your_key
+```
+
+To run it from CI **without vendoring a copy**, see [`templates/consistency-validators/consistency-validators.yml`](templates/consistency-validators/consistency-validators.yml) — it checks the repo out and runs the script. (The SliceOps spec repo runs exactly this on every PR — dogfooding.)
+
+**2. Adopt the CI guardrails** — copy the levers you want from [`templates/ci-guardrails/`](templates/ci-guardrails/) into your `.github/workflows/`; each file's header documents the equivalent for non-GitHub CI. They are bootstrap defaults (P9), not post-incident retrofit.
+
+**3. Calibrate token / context bands** from real session logs:
+
+```bash
+python3 calibration/calibrate.py --root path/to/session-jsonl/ --label my-baseline
+```
+
+**4. Track cost** with the three-dimension [`templates/cost-ledger/`](templates/cost-ledger/) template (token billed-equivalent + infra/CI + LLM-API-in-CI).
+
+> Design posture: these are **reference templates you adapt**, not a black-box dependency — bind `--root` and the conventions to your layout, swap the stdlib frontmatter parser for a real YAML one if you prefer, and so on.
 
 ## Roadmap (pending)
 
