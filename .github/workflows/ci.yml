@@ -1,30 +1,54 @@
 # SPDX-License-Identifier: MIT
-# Recursive dogfooding: SliceOps toolkit repo runs the Layer B.2 CI guardrails
-# it publishes. Bootstrap default per P12 (NOT a retrofit).
-# Templates: templates/ci-guardrails/
+# Recursive dogfooding — REAL (per DR-2026-06-19 dogfooding-enforcement-mandate,
+# INS-012, LP-003 "published-not-enforced"): the toolkit RUNS the consistency
+# validators it ships AND tests them. The 2026-06-19 audit named this repo's
+# central contradiction — "a validator toolkit with no test of its validators."
+# A prescribed gate that does not execute is a build failure, not a header comment.
 name: ci
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
-# Layer B.2 — concurrency cancel-in-progress (dominant cost lever, P12)
+# Layer B.2 — concurrency cancel-in-progress (dominant cost lever, P9)
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # Layer B.2 — aggregation-required-gate: single lightweight required check.
+  # Layer B.2 — aggregation-required-gate: a single required check.
   ci-gate:
     if: github.event.pull_request.draft == false   # Layer B.2 draft-skip
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify B.2 guardrail templates present
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: B.2 guardrail templates present (structure smoke)
         run: |
           set -e
           for f in concurrency-cancel change-scoped-gating aggregation-required-gate draft-skip dependency-cache; do
             test -f "templates/ci-guardrails/$f.yml" || { echo "::error::missing guardrail template: $f.yml"; exit 1; }
           done
           test -f templates/cost-ledger/cost-ledger-template.md
-          echo "B.2 guardrail templates and cost-ledger: PASS"
+          echo "templates present: PASS"
+
+      - name: Test the validators (regression suite — a validator toolkit must test its validators)
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Run the validators on this repo (self-application)
+        # Corpus-agnostic checks: this repo ships templates, not a DEC corpus or
+        # a topic taxonomy, so topic-tags/frontmatter-schema do not apply here.
+        run: |
+          python3 templates/consistency-validators/validators.py \
+            --root . \
+            --checks counter-atomicity,principle-count-coherence,entity-count-coherence,band-unit,llm-ci-cost
+
+      - name: Secrets scan (gitleaks)
+        # Working-tree scan; fails the job on any finding. Pinned image for
+        # reproducibility. P7 Security-by-Construction.
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.18.4 \
+            detect --source=/repo --no-git --redact -v
