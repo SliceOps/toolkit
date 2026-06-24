@@ -52,6 +52,12 @@ python3 calibration/calibrate.py --root path/to/session-jsonl/ --label my-baseli
 
 The **patterns** are vendor-agnostic / stack-agnostic (Layer B.2). Concrete instances (GitHub Actions YAML, specific package managers) are Layer C.2 — each header documents the equivalent for other CI providers so adopters instantiate their own. Guardrails are **bootstrap defaults, never post-incident retrofit** (P9).
 
+## Contributing
+
+Contributions are welcome under the MIT license and a DCO sign-off (`git commit -s`).
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md);
+report security issues per [`SECURITY.md`](SECURITY.md).
+
 ## License
 
 Licensed under the [MIT License](LICENSE). Copyright (c) 2026 Andrés Ramírez Sierra.
