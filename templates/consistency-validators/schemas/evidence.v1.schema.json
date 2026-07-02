@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sliceops.org/schemas/evidence/evidence.v1.schema.json",
+  "title": "SliceOps Evidence Record v1",
+  "description": "Canonical Layer B.1 evidence record format — the machine-readable expression of P6 (Evidence-by-Construction) and P7 (Security-by-Construction). One record is emitted per slice merge (mandatory) and per gated operation. The record carries the four P6 evidence categories — functional and quality (checks[]), decision (decisionRefs[]), provenance (provenance object + actor + timestamps + artifact hashes) — plus the P7 security gate (checks[] with category 'security'). Vendor/adopter content extends ONLY through the namespaced 'extensions' object (Layer C per the IP boundary); canonical validators ignore extension content. evidence.v1 records carry no embedded signature field: signing is a detached attestation over the artifact bundle/manifest containing the record (see reference/evidence/evidence-v1.md). Documentation license CC BY 4.0; this schema file is code under MIT.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "evidenceId",
+    "operationType",
+    "status",
+    "actor",
+    "startedAt",
+    "finishedAt",
+    "artifacts",
+    "checks",
+    "redaction"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "description": "Format identity and version pin. Breaking changes bump to sliceops.evidence/v2.",
+      "const": "sliceops.evidence/v1"
+    },
+    "evidenceId": {
+      "description": "Stable unique identifier of this record within the emitting corpus (lowercase slug).",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]{2,127}$"
+    },
+    "operationType": {
+      "description": "The gated operation that produced this record (lowercase token). Canonical value 'slice-merge' is the P6 per-slice record and triggers the completeness constraints below. Other recommended values: validate, test-run, release, publish, infra-plan, infra-apply, cicd-run. Vendors/adopters MAY use their own tokens; vendor-specific operation vocabularies are Layer C.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"
+    },
+    "status": {
+      "description": "Overall outcome of the operation. P6 hard gate: a slice does not merge unless its slice-merge record is 'passed'.",
+      "enum": ["passed", "failed", "inconclusive", "skipped", "stale", "blocked"]
+    },
+    "actor": {
+      "description": "Who or what executed the operation — part of the P6 provenance category (agent attribution).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {
+          "enum": ["human", "agent", "tool", "system"]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        }
+      }
+    },
+    "startedAt": {
+      "description": "Operation start (RFC 3339) — part of the P6 provenance category (timestamps).",
+      "type": "string",
+      "format": "date-time"
+    },
+    "finishedAt": {
+      "description": "Operation end (RFC 3339) — part of the P6 provenance category (timestamps).",
+      "type": "string",
+      "format": "date-time"
+    },
+    "artifacts": {
+      "description": "Hash-anchored artifacts the evidence covers. Hashes make the record third-party recomputable.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "checks": {
+      "description": "Categorized gate results. Categories map to P6 (functional, quality) and P7 (security). The decision and provenance categories of P6 are carried by decisionRefs and provenance respectively.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/check"
+      }
+    },
+    "traceRefs": {
+      "description": "Optional hash-anchored execution traces (drift tests, eval suites, agentic runs).",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/traceRef"
+      }
+    },
+    "provenance": {
+      "description": "P6 provenance category: slice ID, commit SHA, session reference. Required (with sliceId and commitSha) when operationType is 'slice-merge'; gated operations outside a slice (e.g. a scheduled release) MAY omit it.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sliceId": {
+          "$ref": "#/$defs/sliceId"
+        },
+        "commitSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{7,40}$"
+        },
+        "sessionRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      }
+    },
+    "decisionRefs": {
+      "description": "P6 decision category: DecisionRecord / InsightRecord identifiers this evidence supports or was produced alongside. Required (min 1) when operationType is 'slice-merge'.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/decisionRef"
+      }
+    },
+    "redaction": {
+      "description": "Secrets-redaction attestation (P7 secrets policy: never in evidence, logs, or the audit plane). 'failed' redaction must fail the gate consuming this record.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "rules"],
+      "properties": {
+        "status": {
+          "enum": ["applied", "not-needed", "failed"]
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "extensions": {
+      "description": "Vendor/adopter extension point (Layer C per the IP boundary). Keys MUST be reverse-DNS-style namespaces (at least one dot, e.g. 'dev.example.runtime'); values are unconstrained and belong to the extension owner's IP. Canonical validators validate the key shape and ignore the content. Extensions MUST NOT override or re-define the semantics of canonical fields.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)+$"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "operationType": {
+            "const": "slice-merge"
+          }
+        },
+        "required": ["operationType"]
+      },
+      "then": {
+        "description": "P6: every slice-merge record carries all four evidence categories plus the P7 security gate. Checks not executed are recorded with status 'skipped' — enumerated, never silently absent.",
+        "required": ["provenance", "decisionRefs"],
+        "properties": {
+          "provenance": {
+            "required": ["sliceId", "commitSha"]
+          },
+          "decisionRefs": {
+            "minItems": 1
+          },
+          "checks": {
+            "allOf": [
+              {
+                "contains": {
+                  "properties": { "category": { "const": "functional" } },
+                  "required": ["category"]
+                }
+              },
+              {
+                "contains": {
+                  "properties": { "category": { "const": "quality" } },
+                  "required": ["category"]
+                }
+              },
+              {
+                "contains": {
+                  "properties": { "category": { "const": "security" } },
+                  "required": ["category"]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "hash"],
+      "properties": {
+        "kind": {
+          "description": "Artifact kind (lowercase token). Recommended values: source, bundle, report, sbom, attestation, manifest, log, dataset. Vendor-specific kinds are Layer C — prefer carrying them here as plain tokens and their semantics under 'extensions'.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{2,127}$"
+        },
+        "path": {
+          "type": "string"
+        },
+        "hash": {
+          "description": "Lowercase hex digest of the artifact content — exactly SHA-256 (64 chars), SHA-384 (96 chars), or SHA-512 (128 chars). SHA-256 is the recommended default.",
+          "type": "string",
+          "pattern": "^([a-f0-9]{64}|[a-f0-9]{96}|[a-f0-9]{128})$"
+        }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "status", "severity"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{2,127}$"
+        },
+        "category": {
+          "description": "Evidence category of this check: 'functional' and 'quality' per P6, 'security' per P7.",
+          "enum": ["functional", "quality", "security"]
+        },
+        "status": {
+          "enum": ["passed", "failed", "warning", "skipped", "blocked"]
+        },
+        "severity": {
+          "enum": ["info", "warning", "error", "critical"]
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      }
+    },
+    "traceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionId", "traceHash"],
+      "properties": {
+        "executionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "traceHash": {
+          "type": "string",
+          "pattern": "^([a-f0-9]{64}|[a-f0-9]{96}|[a-f0-9]{128})$"
+        }
+      }
+    },
+    "sliceId": {
+      "description": "Canonical SliceOps slice identifier: Block, optional Section, Slice.",
+      "type": "string",
+      "pattern": "^BL-[0-9]{2,}(\\.SEC-[0-9]{2,})?\\.SL-[0-9]{3}[a-z]?$"
+    },
+    "decisionRef": {
+      "description": "Canonical decision/insight reference: date-slug DecisionRecords (DR-YYYY-MM-DD-slug) or counter-based artifact ids (e.g. DEC-021, INS-014).",
+      "type": "string",
+      "pattern": "^(DR-[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9][a-z0-9-]*|[A-Z]{2,6}-[0-9]{1,6})$"
+    }
+  }
+}

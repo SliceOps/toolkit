@@ -35,12 +35,42 @@ jobs:
           test -f templates/cost-ledger/cost-ledger-template.md
           echo "templates present: PASS"
 
-      - name: Test the validators (regression suite — a validator toolkit must test its validators)
+      - name: Evidence schema sync gate (vendored copy == spec canonical)
+        # The evidence-schema check validates against the VENDORED copy of the
+        # canonical evidence.v1 schema. Drift between it and spec main is the
+        # denormalized-copy failure mode this toolkit exists to catch — same
+        # philosophy as the website's license-sync gate. Byte-compare; on
+        # drift, re-vendor from the spec (the spec is canonical, never edit
+        # the vendored copy by hand).
+        run: |
+          curl -fsSL --retry 3 \
+            https://raw.githubusercontent.com/SliceOps/spec/main/reference/evidence/evidence.v1.schema.json \
+            -o /tmp/evidence.v1.schema.canonical.json
+          cmp /tmp/evidence.v1.schema.canonical.json \
+            templates/consistency-validators/schemas/evidence.v1.schema.json \
+            || { echo "::error::vendored evidence.v1 schema drifted from spec canonical — re-vendor from SliceOps/spec reference/evidence/evidence.v1.schema.json"; exit 1; }
+          echo "evidence schema sync: PASS"
+
+      - name: Test the validators, stdlib-only (regression suite — a validator toolkit must test its validators)
+        # No optional deps installed: exercises the PyYAML and jsonschema
+        # stdlib fallbacks (the jsonschema-mode test class self-skips here).
         run: python3 -m unittest discover -s tests -v
+
+      - name: Test the validators again with the optional deps (PyYAML + jsonschema)
+        # Same suite, full modes: robust YAML parsing + full Draft 2020-12
+        # evidence validation. Green with AND without the optional deps is the
+        # contract (v0.1.1 discipline, extended to jsonschema in v0.2.0).
+        run: |
+          python3 -m pip install --quiet pyyaml jsonschema
+          python3 -m unittest discover -s tests -v
 
       - name: Run the validators on this repo (self-application)
         # --checks all: this repo has no DEC corpus or topic taxonomy, so
         # topic-tags reports SKIPPED (green) and the DEC checks pass vacuously.
+        # evidence-schema is exercised for REAL: tests/fixtures/evidence/ ships
+        # the two VALID golden records as *.evidence.json (discovered, must
+        # validate) while the three deliberately-INVALID fixtures keep their
+        # *.example.* names (excluded from discovery by design).
         run: |
           python3 templates/consistency-validators/validators.py --root . --checks all
 
