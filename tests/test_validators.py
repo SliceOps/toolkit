@@ -142,6 +142,37 @@ class Frontmatter(unittest.TestCase):
             # All 5 Layer-1 fields missing.
             self.assertEqual(len(errs), 5)
 
+    _LAYER1 = ("conflicts-with: []\nrelated-decs: []\ntopics: [alpha]\n"
+               "vocabulary-changes: []\nconsistency-check: ok\n")
+
+    def _ratified(self, created, approver_line=""):
+        return ("---\nentity: DecisionRecord\nstatus: ratified\n"
+                f"created: {created}\n{approver_line}" + self._LAYER1 + "---\nbody")
+
+    def test_ratified_after_cutoff_requires_approver(self):
+        # P3 author≠approver (spec v1.1.0): ratified + created >= 2026-07-03
+        # with no approver is an error.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "dec.md", self._ratified("2026-07-03"))
+            docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
+            errs = v.check_frontmatter_schema(docs)
+            self.assertEqual(len(errs), 1)
+            self.assertIn("approver", errs[0])
+
+    def test_ratified_after_cutoff_with_approver_passes(self):
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "dec.md",
+                   self._ratified("2026-08-01", "approver: someone\n"))
+            docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
+            self.assertEqual(v.check_frontmatter_schema(docs), [])
+
+    def test_ratified_before_cutoff_is_exempt(self):
+        # Legacy DECs are back-filled fix-on-touch, never bulk-required.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "dec.md", self._ratified("2026-07-02"))
+            docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
+            self.assertEqual(v.check_frontmatter_schema(docs), [])
+
 
 def _dr(related, entity_key="entity"):
     body = "---\n%s: DecisionRecord\n" % entity_key

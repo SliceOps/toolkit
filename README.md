@@ -2,7 +2,7 @@
 
 > CI guardrail templates, validators, and tooling for SliceOps™ adopters.
 
-**Status: public · v0.2.0.** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DR-2026-06-15-sliceops-license-ratification`).
+**Status: public · v0.2.1.** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DR-2026-06-15-sliceops-license-ratification`).
 
 ## What's here
 
