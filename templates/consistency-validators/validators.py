@@ -115,6 +115,10 @@ def doc_id(path):
 def check_frontmatter_schema(docs, entity_key="entity"):
     req = ["conflicts-with", "related-decs", "topics",
            "vocabulary-changes", "consistency-check"]
+    # P3 author≠approver (spec v1.1.0, DR-2026-07-02-author-approver-separation):
+    # DECs ratified on/after this date must record the ratifying human. Earlier
+    # DECs are back-filled fix-on-touch (P12), never bulk-required.
+    approver_cutoff = "2026-07-03"
     errs = []
     for p, (fm, _) in docs.items():
         if fm.get(entity_key) != "DecisionRecord":
@@ -122,6 +126,15 @@ def check_frontmatter_schema(docs, entity_key="entity"):
         for k in req:
             if k not in fm:
                 errs.append(f"{doc_id(p)}: missing Layer 1 field '{k}'")
+        # str() normalizes PyYAML date objects to ISO form, so the lexical
+        # comparison holds in both parser modes; missing 'created' is exempt.
+        if (str(fm.get("status", "")).strip() == "ratified"
+                and str(fm.get("created", "")).strip() >= approver_cutoff
+                and not str(fm.get("approver", "") or "").strip()):
+            errs.append(
+                f"{doc_id(p)}: status 'ratified' with no 'approver' recorded "
+                f"(P3 author≠approver, spec v1.1.0 — required for DECs created "
+                f"on/after {approver_cutoff})")
     return errs
 
 
