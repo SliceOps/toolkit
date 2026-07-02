@@ -12,9 +12,13 @@
 #
 # Stdlib only by default. If PyYAML is importable it is used for robust
 # frontmatter + workflow parsing; otherwise a minimal stdlib parser handles the
-# documented subset (see read_frontmatter). No dependency is REQUIRED.
+# documented subset (see read_frontmatter). If jsonschema is importable the
+# evidence-schema check runs full Draft 2020-12 validation; otherwise a
+# documented stdlib subset applies (see _validate_evidence_stdlib). No
+# dependency is REQUIRED.
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -24,6 +28,12 @@ try:  # optional: robust YAML when present, stdlib fallback otherwise
     import yaml as _yaml
 except ImportError:  # pragma: no cover
     _yaml = None
+
+try:  # optional: full Draft 2020-12 evidence validation when present,
+    #           documented stdlib-subset fallback otherwise (same policy as PyYAML)
+    import jsonschema as _jsonschema
+except ImportError:  # pragma: no cover
+    _jsonschema = None
 
 FM = re.compile(r"^---\n(.*?)\n---", re.S)
 
@@ -413,6 +423,233 @@ def check_llm_ci_cost(root):
     return errs
 
 
+# ---------------------------------------------------------------------------
+# Check #10 — evidence-schema (evidence.v1, canonical record format)
+# Spec: sliceops-spec reference/evidence/evidence-v1.md +
+# reference/evidence/evidence.v1.schema.json (ratified
+# DR-2026-07-02-evidence-v1-canonical-schema). The schema vendored under
+# schemas/ MUST stay byte-identical to the spec canonical — the toolkit CI
+# byte-compares it against the raw spec-main URL on every PR (drift fails).
+# ---------------------------------------------------------------------------
+
+# Discovery glob: ONLY files ending '.evidence.json' or '.evidence.v1.json'
+# under --root are evidence records. Any filename containing '.example.' is a
+# golden fixture, NEVER a record — the spec repo ships three deliberately
+# INVALID examples (*.evidence.v1.example.json) that must not break its CI.
+_EVIDENCE_SUFFIXES = (".evidence.json", ".evidence.v1.json")
+_EVIDENCE_SCHEMA_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "schemas", "evidence.v1.schema.json",
+)
+
+
+def find_evidence_records(root):
+    for dirpath, _, files in os.walk(root):
+        if _norm_parts(dirpath) & _SKIP_DIRS:
+            continue
+        for f in files:
+            if ".example." in f:
+                continue  # golden fixture (possibly deliberately invalid)
+            if f.endswith(_EVIDENCE_SUFFIXES):
+                yield os.path.join(dirpath, f)
+
+
+def _validate_evidence_stdlib(rec, schema):
+    """Documented STDLIB SUBSET of evidence.v1 validation (jsonschema absent).
+
+    Covers: required top-level fields; the schemaVersion const; enum
+    membership (status, actor.type, check category/status/severity,
+    redaction.status); pattern checks (evidenceId, operationType,
+    provenance.sliceId + commitSha, decisionRefs, artifact/trace hashes —
+    exactly 64|96|128 lowercase hex — and reverse-DNS extensions keys);
+    additionalProperties rejection at the top level; required sub-fields of
+    actor/artifacts/checks/traceRefs/redaction; and the slice-merge P6
+    completeness rule (functional+quality+security check categories, >=1
+    decisionRefs, provenance.sliceId+commitSha).
+
+    Does NOT cover: format annotations (RFC 3339 date-time), string
+    length bounds, nested additionalProperties, or other deep conditional
+    subtleties — install jsonschema for full Draft 2020-12 validation.
+
+    Enums, patterns and required lists are read from the vendored schema at
+    run time, never duplicated here (the denormalized-copy drift this toolkit
+    exists to catch).
+    """
+    errs = []
+    props, defs = schema["properties"], schema["$defs"]
+
+    def enum_ok(value, allowed, label):
+        if value not in allowed:
+            errs.append(f"{label}: {value!r} not one of {allowed}")
+
+    def pattern_ok(value, pat, label):
+        if not isinstance(value, str) or not re.fullmatch(pat, value):
+            errs.append(f"{label}: {value!r} does not match '{pat}'")
+
+    for k in schema["required"]:
+        if k not in rec:
+            errs.append(f"missing required field '{k}'")
+    for k in rec:
+        if k not in props:
+            errs.append(f"unknown top-level field '{k}' (additionalProperties:"
+                        f" false — vendor/adopter data goes under 'extensions')")
+
+    if "schemaVersion" in rec and rec["schemaVersion"] != props["schemaVersion"]["const"]:
+        errs.append(f"schemaVersion: {rec['schemaVersion']!r} != "
+                    f"'{props['schemaVersion']['const']}'")
+    if "evidenceId" in rec:
+        pattern_ok(rec["evidenceId"], props["evidenceId"]["pattern"], "evidenceId")
+    if "operationType" in rec:
+        pattern_ok(rec["operationType"], props["operationType"]["pattern"],
+                   "operationType")
+    if "status" in rec:
+        enum_ok(rec["status"], props["status"]["enum"], "status")
+
+    actor = rec.get("actor")
+    if isinstance(actor, dict):
+        for rk in props["actor"]["required"]:
+            if rk not in actor:
+                errs.append(f"actor: missing required field '{rk}'")
+        if "type" in actor:
+            enum_ok(actor["type"], props["actor"]["properties"]["type"]["enum"],
+                    "actor.type")
+    elif "actor" in rec:
+        errs.append("actor: must be an object")
+
+    art_def = defs["artifact"]
+    for i, a in enumerate(rec.get("artifacts") or []):
+        if not isinstance(a, dict):
+            errs.append(f"artifacts[{i}]: must be an object")
+            continue
+        for rk in art_def["required"]:
+            if rk not in a:
+                errs.append(f"artifacts[{i}]: missing required field '{rk}'")
+        if "hash" in a:
+            pattern_ok(a["hash"], art_def["properties"]["hash"]["pattern"],
+                       f"artifacts[{i}].hash")
+
+    chk_def = defs["check"]
+    categories = set()
+    for i, c in enumerate(rec.get("checks") or []):
+        if not isinstance(c, dict):
+            errs.append(f"checks[{i}]: must be an object")
+            continue
+        for rk in chk_def["required"]:
+            if rk not in c:
+                errs.append(f"checks[{i}]: missing required field '{rk}'")
+        for field in ("category", "status", "severity"):
+            if field in c:
+                enum_ok(c[field], chk_def["properties"][field]["enum"],
+                        f"checks[{i}].{field}")
+        if c.get("category") in chk_def["properties"]["category"]["enum"]:
+            categories.add(c["category"])
+
+    trace_def = defs["traceRef"]
+    for i, t in enumerate(rec.get("traceRefs") or []):
+        if not isinstance(t, dict):
+            errs.append(f"traceRefs[{i}]: must be an object")
+            continue
+        for rk in trace_def["required"]:
+            if rk not in t:
+                errs.append(f"traceRefs[{i}]: missing required field '{rk}'")
+        if "traceHash" in t:
+            pattern_ok(t["traceHash"],
+                       trace_def["properties"]["traceHash"]["pattern"],
+                       f"traceRefs[{i}].traceHash")
+
+    prov = rec.get("provenance")
+    if isinstance(prov, dict):
+        if "sliceId" in prov:
+            pattern_ok(prov["sliceId"], defs["sliceId"]["pattern"],
+                       "provenance.sliceId")
+        if "commitSha" in prov:
+            pattern_ok(prov["commitSha"],
+                       props["provenance"]["properties"]["commitSha"]["pattern"],
+                       "provenance.commitSha")
+    elif "provenance" in rec:
+        errs.append("provenance: must be an object")
+
+    for i, d in enumerate(rec.get("decisionRefs") or []):
+        pattern_ok(d, defs["decisionRef"]["pattern"], f"decisionRefs[{i}]")
+
+    red = rec.get("redaction")
+    if isinstance(red, dict):
+        for rk in props["redaction"]["required"]:
+            if rk not in red:
+                errs.append(f"redaction: missing required field '{rk}'")
+        if "status" in red:
+            enum_ok(red["status"],
+                    props["redaction"]["properties"]["status"]["enum"],
+                    "redaction.status")
+    elif "redaction" in rec:
+        errs.append("redaction: must be an object")
+
+    ext = rec.get("extensions")
+    if isinstance(ext, dict):
+        key_pat = props["extensions"]["propertyNames"]["pattern"]
+        for k in ext:
+            pattern_ok(k, key_pat, "extensions key")
+    elif "extensions" in rec:
+        errs.append("extensions: must be an object")
+
+    # Slice-merge P6 completeness (the schema's allOf/if-then conditional,
+    # restated here — the one rule the fallback hardcodes rather than reads).
+    if rec.get("operationType") == "slice-merge":
+        if not isinstance(prov, dict) or "sliceId" not in prov \
+                or "commitSha" not in prov:
+            errs.append("slice-merge: provenance with sliceId + commitSha "
+                        "is required (P6 provenance category)")
+        if not rec.get("decisionRefs"):
+            errs.append("slice-merge: >=1 decisionRefs entry is required "
+                        "(P6 decision category)")
+        missing = {"functional", "quality", "security"} - categories
+        if missing:
+            errs.append(f"slice-merge: checks missing categories "
+                        f"{sorted(missing)} (P6/P7 completeness)")
+    return errs
+
+
+def check_evidence_schema(root):
+    """evidence-schema — every evidence.v1 record validates against the
+    canonical schema (vendored under schemas/, byte-synced to the spec).
+
+    Skip semantics (same philosophy as topic-tags): a corpus with ZERO
+    evidence records genuinely skips (green) — corpora that have not adopted
+    evidence.v1 yet must not fail. A vendored schema that is missing or
+    unreadable is a hard error (misconfiguration, not a skip)."""
+    records = sorted(find_evidence_records(root))
+    if not records:
+        return None  # no evidence records in corpus -> genuine skip (green)
+    try:
+        with open(_EVIDENCE_SCHEMA_PATH, encoding="utf-8") as fh:
+            schema = json.load(fh)
+    except (OSError, ValueError) as e:
+        return [f"vendored schema missing/unreadable "
+                f"({_EVIDENCE_SCHEMA_PATH}): {e}"]
+    errs = []
+    for p in records:
+        rel = os.path.relpath(p, root)
+        try:
+            with open(p, encoding="utf-8") as fh:
+                rec = json.load(fh)
+        except (OSError, ValueError) as e:
+            errs.append(f"{rel}: invalid JSON ({e})")
+            continue
+        if not isinstance(rec, dict):
+            errs.append(f"{rel}: top-level value must be a JSON object")
+            continue
+        if _jsonschema is not None:  # full Draft 2020-12
+            validator = _jsonschema.Draft202012Validator(schema)
+            for err in sorted(validator.iter_errors(rec),
+                              key=lambda e: str(list(e.absolute_path))):
+                loc = "/".join(str(x) for x in err.absolute_path) or "(top level)"
+                errs.append(f"{rel}: {loc}: {err.message[:200]}")
+        else:  # documented stdlib subset
+            errs.extend(f"{rel}: {e}" for e in
+                        _validate_evidence_stdlib(rec, schema))
+    return errs
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
@@ -437,6 +674,8 @@ def main():
         "entity-count-coherence": lambda: check_entity_count_coherence(args.root),
         "band-unit": lambda: check_band_unit(args.root),
         "llm-ci-cost": lambda: check_llm_ci_cost(args.root),
+        # evidence.v1 (check #10, v0.2.0)
+        "evidence-schema": lambda: check_evidence_schema(args.root),
     }
     selected = (all_checks if args.checks == "all"
                 else {k: all_checks[k] for k in args.checks.split(",")
@@ -445,7 +684,8 @@ def main():
     failed = False
     for name, fn in selected.items():
         errs = fn()
-        if errs is None:                      # genuine skip (e.g. topic-tags unconfigured)
+        if errs is None:                      # genuine skip (topic-tags unconfigured,
+            # or evidence-schema with zero evidence records in the corpus)
             print(f"[{name}] SKIPPED")
         elif errs:
             failed = True

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "sliceops.evidence/v1",
+  "evidenceId": "payments-service-bad-provenance-commit",
+  "operationType": "test-run",
+  "status": "passed",
+  "actor": {
+    "type": "tool",
+    "id": "ci-test-runner"
+  },
+  "startedAt": "2026-07-02T09:00:00Z",
+  "finishedAt": "2026-07-02T09:00:03Z",
+  "artifacts": [],
+  "checks": [
+    {
+      "id": "unit-tests",
+      "category": "functional",
+      "status": "passed",
+      "severity": "critical"
+    }
+  ],
+  "provenance": {
+    "sliceId": "BL-04.SL-012",
+    "commitSha": "not-a-valid-sha"
+  },
+  "redaction": {
+    "status": "not-needed",
+    "rules": []
+  }
+}

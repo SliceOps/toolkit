@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "sliceops.evidence/v1",
+  "evidenceId": "payments-service-slice-merge-bl-07-sl-041",
+  "operationType": "slice-merge",
+  "status": "passed",
+  "actor": {
+    "type": "agent",
+    "id": "coding-agent-session-runner"
+  },
+  "startedAt": "2026-07-02T14:30:00Z",
+  "finishedAt": "2026-07-02T14:41:12Z",
+  "artifacts": [
+    {
+      "kind": "source",
+      "id": "payments-refund-endpoint",
+      "path": "src/payments/refund.ts",
+      "hash": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "kind": "report",
+      "id": "coverage-report-sl-041",
+      "path": "reports/coverage/sl-041.json",
+      "hash": "3333333333333333333333333333333333333333333333333333333333333333"
+    },
+    {
+      "kind": "sbom",
+      "id": "payments-service-sbom",
+      "path": "reports/sbom/payments-service.cdx.json",
+      "hash": "4444444444444444444444444444444444444444444444444444444444444444"
+    }
+  ],
+  "checks": [
+    {
+      "id": "unit-tests",
+      "category": "functional",
+      "status": "passed",
+      "severity": "critical",
+      "message": "212/212 unit tests passed."
+    },
+    {
+      "id": "hallucinated-dependency-check",
+      "category": "functional",
+      "status": "passed",
+      "severity": "critical",
+      "message": "All imports resolve against the known-good registry."
+    },
+    {
+      "id": "lint",
+      "category": "quality",
+      "status": "passed",
+      "severity": "error"
+    },
+    {
+      "id": "coverage-threshold",
+      "category": "quality",
+      "status": "passed",
+      "severity": "error",
+      "message": "Slice coverage 87% >= 80% threshold."
+    },
+    {
+      "id": "sast",
+      "category": "security",
+      "status": "passed",
+      "severity": "critical"
+    },
+    {
+      "id": "secrets-scan",
+      "category": "security",
+      "status": "passed",
+      "severity": "critical"
+    },
+    {
+      "id": "dependency-vulnerabilities",
+      "category": "security",
+      "status": "passed",
+      "severity": "critical",
+      "message": "0 known vulnerabilities at high or critical severity."
+    }
+  ],
+  "traceRefs": [
+    {
+      "executionId": "drift-suite-run-0142",
+      "traceHash": "5555555555555555555555555555555555555555555555555555555555555555"
+    }
+  ],
+  "provenance": {
+    "sliceId": "BL-07.SEC-03.SL-041",
+    "commitSha": "a1b2c3d4e5f6789012345678901234567890abcd",
+    "sessionRef": "agent-session/2026-07-02/refund-endpoint-slice"
+  },
+  "decisionRefs": ["DEC-021", "INS-014"],
+  "redaction": {
+    "status": "applied",
+    "rules": ["no-secrets-in-evidence", "log-redaction-v1"]
+  },
+  "extensions": {
+    "dev.example.runtime": {
+      "ruleBundle": "example-runtime-standard",
+      "ruleBundleVersion": "0.3.1"
+    }
+  }
+}

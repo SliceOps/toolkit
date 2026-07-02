@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "sliceops.evidence/v1",
+  "evidenceId": "payments-service-validate-20260702-001",
+  "operationType": "validate",
+  "status": "passed",
+  "actor": {
+    "type": "tool",
+    "id": "ci-schema-validator"
+  },
+  "startedAt": "2026-07-02T10:00:00Z",
+  "finishedAt": "2026-07-02T10:00:04Z",
+  "artifacts": [
+    {
+      "kind": "manifest",
+      "id": "payments-service-openapi",
+      "path": "apis/payments-service.openapi.yaml",
+      "hash": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "checks": [
+    {
+      "id": "openapi-schema-valid",
+      "category": "functional",
+      "status": "passed",
+      "severity": "error",
+      "message": "API description validates against OpenAPI 3.1."
+    }
+  ],
+  "redaction": {
+    "status": "not-needed",
+    "rules": []
+  }
+}

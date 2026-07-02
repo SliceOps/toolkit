@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "sliceops.evidence/v1",
+  "evidenceId": "payments-service-slice-merge-missing-security",
+  "operationType": "slice-merge",
+  "status": "passed",
+  "actor": {
+    "type": "agent",
+    "id": "coding-agent-session-runner"
+  },
+  "startedAt": "2026-07-02T14:30:00Z",
+  "finishedAt": "2026-07-02T14:41:12Z",
+  "artifacts": [
+    {
+      "kind": "source",
+      "id": "payments-refund-endpoint",
+      "path": "src/payments/refund.ts",
+      "hash": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "checks": [
+    {
+      "id": "unit-tests",
+      "category": "functional",
+      "status": "passed",
+      "severity": "critical"
+    },
+    {
+      "id": "lint",
+      "category": "quality",
+      "status": "passed",
+      "severity": "error"
+    }
+  ],
+  "provenance": {
+    "sliceId": "BL-07.SEC-03.SL-041",
+    "commitSha": "a1b2c3d4e5f6789012345678901234567890abcd"
+  },
+  "decisionRefs": ["DEC-021"],
+  "redaction": {
+    "status": "applied",
+    "rules": ["no-secrets-in-evidence"]
+  }
+}
