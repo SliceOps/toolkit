@@ -38,13 +38,29 @@ def _write(root, relpath, text):
 
 class CounterAtomicity(unittest.TestCase):
     def test_date_slugs_do_not_collide(self):
-        # Two same-year date-based DRs + a CF — uniqueness is date+slug, not a
+        # Two same-year date-based DECs + a CF — uniqueness is date+slug, not a
         # counter. The "2026" must not be mis-read as a counter (commit 883c391).
         with tempfile.TemporaryDirectory() as d:
-            _write(d, "decisions/accepted/DR-2026-05-12-three-layer.md", "x")
-            _write(d, "decisions/accepted/DR-2026-06-15-license.md", "x")
+            _write(d, "decisions/DEC-2026-05-12-three-layer.md", "x")
+            _write(d, "decisions/DEC-2026-06-15-license.md", "x")
             _write(d, "cf/CF-2026-05-14-glossary.md", "x")
             self.assertEqual(v.check_counter_atomicity(d), [])
+
+    def test_lifecycle_infix_date_slugs_do_not_collide(self):
+        # v1.2.0 flat layout: two same-date DEC-D- records must not be misread
+        # as counter "2026" colliding (lifecycle infix in the date-skip).
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "decisions/DEC-D-2026-05-12-canonical-principles.md", "x")
+            _write(d, "decisions/DEC-D-2026-05-12-spec-repo-structure.md", "x")
+            self.assertEqual(v.check_counter_atomicity(d), [])
+
+    def test_lifecycle_infix_counter_id_reuse_is_caught(self):
+        # A new DEC-041 reusing the id held by a deprecated DEC-D-041 collides.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "10-decisions/DEC-D-041-old.md", "x")
+            _write(d, "10-decisions/DEC-041-new.md", "x")
+            errs = v.check_counter_atomicity(d)
+            self.assertEqual(len(errs), 1)
 
     def test_real_counter_collision_is_caught(self):
         with tempfile.TemporaryDirectory() as d:
@@ -166,6 +182,15 @@ class Frontmatter(unittest.TestCase):
             docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
             self.assertEqual(v.check_frontmatter_schema(docs), [])
 
+    def test_approved_after_cutoff_requires_approver(self):
+        # v1.2.0 homologated status: 'approved' triggers the same P3 gate.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "dec.md", self._ratified("2026-07-10").replace(
+                "status: ratified", "status: approved"))
+            docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
+            errs = v.check_frontmatter_schema(docs)
+            self.assertTrue(any("approver" in e for e in errs))
+
     def test_ratified_before_cutoff_is_exempt(self):
         # Legacy DECs are back-filled fix-on-touch, never bulk-required.
         with tempfile.TemporaryDirectory() as d:
@@ -186,26 +211,26 @@ def _dr(related, entity_key="entity"):
 class BidirectionalConvention(unittest.TestCase):
     def test_reciprocated_dr_pair_passes(self):
         with tempfile.TemporaryDirectory() as d:
-            _write(d, "decisions/accepted/DR-A.md", _dr(["DR-B"]))
-            _write(d, "decisions/accepted/DR-B.md", _dr(["DR-A"]))
+            _write(d, "decisions/DEC-A.md", _dr(["DEC-B"]))
+            _write(d, "decisions/DEC-B.md", _dr(["DEC-A"]))
             docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
             self.assertEqual(v.check_bidirectional(docs), [])
 
     def test_one_way_dr_pair_is_caught(self):
         with tempfile.TemporaryDirectory() as d:
-            _write(d, "decisions/accepted/DR-A.md", _dr(["DR-B"]))
-            _write(d, "decisions/accepted/DR-B.md", _dr([]))
+            _write(d, "decisions/DEC-A.md", _dr(["DEC-B"]))
+            _write(d, "decisions/DEC-B.md", _dr([]))
             docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
             errs = v.check_bidirectional(docs)
             self.assertEqual(len(errs), 1)
-            self.assertIn("DR-A -> DR-B", errs[0])
+            self.assertIn("DEC-A -> DEC-B", errs[0])
 
     def test_non_dr_source_is_one_way_ok(self):
         # An InsightRecord referencing a DR must NOT require the DR to reciprocate.
         with tempfile.TemporaryDirectory() as d:
-            ins = "---\nentity: InsightRecord\nrelated-decs:\n  - DR-A\n---\nbody"
+            ins = "---\nentity: InsightRecord\nrelated-decs:\n  - DEC-A\n---\nbody"
             _write(d, "insights/INS-1.md", ins)
-            _write(d, "decisions/accepted/DR-A.md", _dr([]))
+            _write(d, "decisions/DEC-A.md", _dr([]))
             docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
             self.assertEqual(v.check_bidirectional(docs), [])
 
@@ -213,16 +238,16 @@ class BidirectionalConvention(unittest.TestCase):
         # A live DR referencing a superseded DR: the frozen doc is excluded by
         # find_docs, so the edge is not enforced.
         with tempfile.TemporaryDirectory() as d:
-            _write(d, "decisions/accepted/DR-A.md", _dr(["DR-OLD"]))
-            _write(d, "decisions/superseded/DR-OLD.md", _dr([]))
+            _write(d, "decisions/DEC-A.md", _dr(["DEC-D-OLD"]))
+            _write(d, "decisions/DEC-D-OLD.md", _dr([]))
             docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
             self.assertEqual(v.check_bidirectional(docs), [])
 
     def test_custom_entity_key(self):
         # Runtime-mapped entity key (e.g. datta_entity) is honored.
         with tempfile.TemporaryDirectory() as d:
-            _write(d, "decisions/accepted/DR-A.md", _dr(["DR-B"], "datta_entity"))
-            _write(d, "decisions/accepted/DR-B.md", _dr([], "datta_entity"))
+            _write(d, "decisions/DEC-A.md", _dr(["DEC-B"], "datta_entity"))
+            _write(d, "decisions/DEC-B.md", _dr([], "datta_entity"))
             docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
             # Default key 'entity' → sources unrecognized → no enforcement.
             self.assertEqual(v.check_bidirectional(docs), [])
@@ -238,11 +263,11 @@ class PathPortability(unittest.TestCase):
 
     def test_find_docs_skips_frozen_and_git(self):
         with tempfile.TemporaryDirectory() as d:
-            _write(d, "decisions/accepted/DR-x.md", "x")
-            _write(d, "decisions/superseded/DR-old.md", "x")
+            _write(d, "decisions/DEC-x.md", "x")
+            _write(d, "decisions/superseded/legacy-old.md", "x")
             _write(d, ".git/hooks/note.md", "x")
             found = {os.path.basename(p) for p in v.find_docs(d)}
-            self.assertEqual(found, {"DR-x.md"})
+            self.assertEqual(found, {"DEC-x.md"})
 
     def test_iter_workflows_matches_dir_and_name(self):
         with tempfile.TemporaryDirectory() as d:
@@ -279,11 +304,11 @@ class FrontmatterFallback(unittest.TestCase):
                 p = _write(d, "x.md",
                            "---\nentity: DecisionRecord  # inline comment\n"
                            "topics: [a, b]\n"
-                           "related-decs:\n  - DR-1\n  - DR-2\n---\nBODY")
+                           "related-decs:\n  - DEC-1\n  - DEC-2\n---\nBODY")
                 fm, body = v.read_frontmatter(p)
                 self.assertEqual(fm["entity"], "DecisionRecord")
                 self.assertEqual(fm["topics"], ["a", "b"])
-                self.assertEqual(fm["related-decs"], ["DR-1", "DR-2"])
+                self.assertEqual(fm["related-decs"], ["DEC-1", "DEC-2"])
                 self.assertIn("BODY", body)
         finally:
             v._yaml = orig

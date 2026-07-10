@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: MIT
+# SliceOps Layer B.1 — naming validator merge gate (spec v1.2.0 naming.md §9).
+# Vendor-agnostic pattern; GitHub Actions instance (Layer C.2 per adopter).
+# Blocks PRs introducing retired prefixes (DR-, IN-, OC-, BR-, SKILL-, RUN-,
+# REF-…), lifecycle subfolders under decisions/, prefix/status mismatches,
+# and non-canonical entity names. Pairs with the pre-write agent hook
+# (settings.example.json) and the vault sweeper (same script, cron).
+name: naming-validator
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Layer B.2 CI/Pipeline Cost Economy — concurrency cancel-in-progress (P9)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  naming:
+    if: github.event.pull_request.draft == false   # B.2 draft-skip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Naming validator (deterministic, stdlib-only)
+        run: |
+          python3 templates/naming-validator/naming_validator.py --check .
+          # Adopters running from CI without vendoring: check out SliceOps/toolkit
+          # side-by-side (see the spec repo's ci.yml for the fetched pattern), or
+          # copy this script into the corpus (.claude/hooks/) so hook + CI share it.

@@ -32,7 +32,7 @@ and proves each check still catches the real defect:
 
 | Behaviour pinned | Regression it guards |
 |---|---|
-| date-based slugs (`DR-2026-…`) do not trip counter-atomicity | commit `883c391` |
+| date-based slugs (`DEC-2026-…`, incl. lifecycle infix `DEC-D-…`) do not trip counter-atomicity | commit `883c391` |
 | band sub-ranges (`P1-P3`) do not trip principle-count-coherence | commit `f46f1c2` |
 | the clarifying/negation form does not trip band-unit | commit `e45c2a4` |
 | the singular "Cognitive Entity" title does not trip entity-count | regex lookbehind |

@@ -28,7 +28,7 @@ jobs:
           python3 templates/consistency-validators/validators.py \
             --root . \
             --checks all \
-            --topic-taxonomy spec/v1.0.0/topics.md
+            --topic-taxonomy spec/v1.2.0/topics.md
 
   # Layer B.2 aggregation-required-gate: the single required status check.
   consistency-gate:

@@ -44,7 +44,11 @@ def _norm_parts(path):
 
 
 # Frozen lifecycle dirs: immutable history, not live corpus (excluded everywhere).
+# Since spec v1.2.0 decisions/ folders are FLAT and the DEC-D- prefix carries the
+# frozen (deprecated/superseded) state — the dir names remain excluded for
+# pre-v1.2.0 corpora; DEC-D- files are the flat-layout equivalent (see find_docs).
 _SKIP_DIRS = {".git", "99-archive", "archive", "superseded", "deprecated"}
+_FROZEN_FILE = re.compile(r"^DEC-D-")   # v1.2.0 flat-layout frozen records
 _WF_MARKER = os.path.join(".github", "workflows")
 
 
@@ -104,7 +108,7 @@ def find_docs(root):
         if _norm_parts(dirpath) & _SKIP_DIRS:
             continue
         for f in files:
-            if f.endswith(".md") and f != "README.md":
+            if f.endswith(".md") and f != "README.md" and not _FROZEN_FILE.match(f):
                 yield os.path.join(dirpath, f)
 
 
@@ -115,9 +119,11 @@ def doc_id(path):
 def check_frontmatter_schema(docs, entity_key="entity"):
     req = ["conflicts-with", "related-decs", "topics",
            "vocabulary-changes", "consistency-check"]
-    # P3 author≠approver (spec v1.1.0, DR-2026-07-02-author-approver-separation):
-    # DECs ratified on/after this date must record the ratifying human. Earlier
-    # DECs are back-filled fix-on-touch (P12), never bulk-required.
+    # P3 author≠approver (spec v1.1.0, DEC-2026-07-02-author-approver-separation;
+    # status vocabulary homologated to 'approved' in spec v1.2.0 — legacy
+    # 'ratified' still recognized on read): DECs approved on/after this date must
+    # record the approving human. Earlier DECs are back-filled fix-on-touch (P12),
+    # never bulk-required.
     approver_cutoff = "2026-07-03"
     errs = []
     for p, (fm, _) in docs.items():
@@ -128,12 +134,13 @@ def check_frontmatter_schema(docs, entity_key="entity"):
                 errs.append(f"{doc_id(p)}: missing Layer 1 field '{k}'")
         # str() normalizes PyYAML date objects to ISO form, so the lexical
         # comparison holds in both parser modes; missing 'created' is exempt.
-        if (str(fm.get("status", "")).strip() == "ratified"
+        status = str(fm.get("status", "")).strip()
+        if (status in ("approved", "ratified")
                 and str(fm.get("created", "")).strip() >= approver_cutoff
                 and not str(fm.get("approver", "") or "").strip()):
             errs.append(
-                f"{doc_id(p)}: status 'ratified' with no 'approver' recorded "
-                f"(P3 author≠approver, spec v1.1.0 — required for DECs created "
+                f"{doc_id(p)}: status '{status}' with no 'approver' recorded "
+                f"(P3 author≠approver — required for DECs created "
                 f"on/after {approver_cutoff})")
     return errs
 
@@ -206,9 +213,14 @@ def check_counter_atomicity(root):
         if ".git" in _norm_parts(dirpath):
             continue
         for f in files:
-            if re.match(r"^[A-Za-z]+-\d{4}-\d{2}-\d{2}-", f):
-                continue  # date-based naming, no counter to collide
-            m = re.match(r"^([A-Z]+)-0*(\d+)(?:[-.]|$)", f)
+            # date-based naming (incl. v1.2.0 lifecycle infix DEC-P-/DEC-D-):
+            # no counter to collide — uniqueness is date+slug.
+            if re.match(r"^[A-Za-z]+(?:-[PD])?-\d{4}-\d{2}-\d{2}-", f):
+                continue
+            # counter-based; the DEC-P-/DEC-D- lifecycle infix normalizes to the
+            # base prefix so an id is never reused across lifecycle states
+            # (a new DEC-041 collides with an existing DEC-D-041).
+            m = re.match(r"^([A-Z]+)(?:-[PD])?-0*(\d+)(?:[-.]|$)", f)
             if m:
                 seen[(m.group(1), m.group(2))].append(os.path.join(dirpath, f))
     errs = [f"counter collision {pfx}-{num}: {paths}"

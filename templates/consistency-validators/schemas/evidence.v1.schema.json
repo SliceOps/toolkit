@@ -253,9 +253,9 @@
       "pattern": "^BL-[0-9]{2,}(\\.SEC-[0-9]{2,})?\\.SL-[0-9]{3}[a-z]?$"
     },
     "decisionRef": {
-      "description": "Canonical decision/insight reference: date-slug DecisionRecords (DR-YYYY-MM-DD-slug) or counter-based artifact ids (e.g. DEC-021, INS-014).",
+      "description": "Canonical decision/insight reference: date-slug DecisionRecords (DEC-YYYY-MM-DD-slug, lifecycle prefixes DEC-P-/DEC-D- included) or counter-based artifact ids (e.g. DEC-021, INS-014). Legacy DR- date-slug ids remain read-tolerated for pre-homologation archives (spec v1.2.0 naming.md §3).",
       "type": "string",
-      "pattern": "^(DR-[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9][a-z0-9-]*|[A-Z]{2,6}-[0-9]{1,6})$"
+      "pattern": "^((?:DEC(?:-[PD])?|DR)-[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9][a-z0-9-]*|DEC(?:-[PD])?-[0-9]{1,6}|[A-Z]{2,6}-[0-9]{1,6})$"
     }
   }
 }

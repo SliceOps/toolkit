@@ -2,7 +2,7 @@
 
 > CI guardrail templates, validators, and tooling for SliceOps™ adopters.
 
-**Status: public · v0.2.1.** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DR-2026-06-15-sliceops-license-ratification`).
+**Status: public · v0.2.1.** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DEC-2026-06-15-sliceops-license-ratification`).
 
 ## What's here
 
@@ -12,6 +12,7 @@
 | `templates/llm-ci-economy/` | **Layer B.2 sub-domain LLM-Inference-Cost-Economy** — workflow demonstrating prompt-caching, model-tier, diff-only context, trigger-set minimalism LLM-aware, and green-not-skipped draft gate |
 | `templates/cost-ledger/` | **Layer B.1** cost-ledger template with three dimensions: token (billed-equivalent), infra/CI, and LLM-API-in-CI (P9) |
 | `templates/consistency-validators/` | **Layer B.1 Layer 3** consistency validators — workflow + deterministic `validators.py` (10 checks: frontmatter-schema, no-orphan-decs, cross-references-bidirectional, topic-tags, counter-atomicity, principle-count-coherence, entity-count-coherence, band-unit, llm-ci-cost, evidence-schema) + the vendored canonical `evidence.v1` schema (`schemas/`, byte-synced to the spec by CI). Stdlib-only; uses PyYAML and jsonschema automatically when installed |
+| `templates/naming-validator/` | **Layer B.1 naming enforcement** (spec v1.2.0 `naming.md` §9) — one `naming_validator.py`, three surfaces: `--check` CI merge gate, `--hook` Claude Code pre-write block (with `settings.example.json`), and the same `--check` as a periodic vault **sweeper**. Blocks retired prefixes (`DR-`, `IN-`, `OC-`, `BR-`, `SKILL-`, `RUN-`, `REF-`…), lifecycle subfolders under `decisions/`, prefix/status mismatches, and non-canonical entity names — every message names the correct form |
 | `calibration/` | **Layer B.1 Calibration discipline** — deterministic `calibrate.py` (stdlib) parses session `.jsonl` → percentiles (clamped to the observed range) → **canonical** + data-driven **observed** bands; `band-calibration-register.md` is the append-only audit trail |
 
 ## Use it

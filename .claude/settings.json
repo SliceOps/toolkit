@@ -1,0 +1,16 @@
+{
+  "$comment": "SliceOps naming hook (spec v1.2.0 naming.md §9) — this repo hosts the canonical validator; the hook runs it in place.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/templates/naming-validator/naming_validator.py\" --hook"
+          }
+        ]
+      }
+    ]
+  }
+}
