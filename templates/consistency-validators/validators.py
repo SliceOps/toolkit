@@ -250,13 +250,36 @@ LLM_ENDPOINT_RE = re.compile(
 )
 
 
+def _latest_principles(root):
+    """Resolve principles.md at the HIGHEST spec version: prefer spec/latest/
+    (symlink), else the highest-semver spec/vX.Y.Z/, else retained v1.0.0.
+    (The former hardcoded v1.0.0 was itself the version-drift this checker
+    exists to prevent — it would read a stale file once the count changes.)"""
+    latest = os.path.join(root, "spec", "latest", "principles.md")
+    if os.path.exists(latest):
+        return latest
+    specdir, best = os.path.join(root, "spec"), None
+    if os.path.isdir(specdir):
+        for d in os.listdir(specdir):
+            m = re.fullmatch(r"v(\d+)\.(\d+)\.(\d+)", d)
+            p = os.path.join(specdir, d, "principles.md")
+            if m and os.path.exists(p):
+                key = tuple(int(x) for x in m.groups())
+                if best is None or key > best[0]:
+                    best = (key, p)
+    if best:
+        return best[1]
+    legacy = os.path.join(root, "spec", "v1.0.0", "principles.md")
+    return legacy if os.path.exists(legacy) else None
+
+
 def check_principle_count_coherence(root):
     """Count P-NN headings in principles.md, then compare against literals
     elsewhere in the spec. The canonical count is what principles.md *is*;
     every literal that disagrees is drift (the denormalized count drift
     failure mode formalized in the spec)."""
-    principles_md = os.path.join(root, "spec", "v1.0.0", "principles.md")
-    if not os.path.exists(principles_md):
+    principles_md = _latest_principles(root)
+    if not principles_md:
         return []  # nothing canonical to compare against
     with open(principles_md, encoding="utf-8") as fh:
         text = fh.read()
