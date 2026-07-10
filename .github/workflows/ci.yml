@@ -10,6 +10,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
+# Least-privilege GITHUB_TOKEN (defense-in-depth; every step here only reads).
+permissions:
+  contents: read
+  pull-requests: read
+
 # Layer B.2 — concurrency cancel-in-progress (dominant cost lever, P9)
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,6 +26,32 @@ jobs:
     if: github.event.pull_request.draft == false   # Layer B.2 draft-skip
     runs-on: ubuntu-latest
     steps:
+      - name: DCO sign-off check (every non-merge commit Signed-off-by its author)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_REPO: ${{ github.repository }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          gh api --paginate "repos/$PR_REPO/pulls/$PR_NUM/commits" \
+            --jq '.[] | select((.parents|length) < 2) | [.sha[0:8], .commit.author.name, .commit.author.email, (.commit.message|@base64)] | @tsv' \
+          | python3 -c '
+          import base64, sys
+          bad = []
+          for line in sys.stdin:
+              parts = line.rstrip("\n").split("\t")
+              if len(parts) < 4:
+                  continue
+              sha, name, email, msg_b64 = parts[0], parts[1], parts[2], parts[3]
+              msg = base64.b64decode(msg_b64).decode("utf-8", "replace")
+              if f"signed-off-by: {name} <{email}>".lower() not in msg.lower():
+                  bad.append((sha, name, email))
+          if bad:
+              print("::error::Missing DCO sign-off. Add it with:  git commit -s   (or  git rebase --signoff origin/main).")
+              for sha, name, email in bad:
+                  print(f"  - {sha}: needs  Signed-off-by: {name} <{email}>")
+              sys.exit(1)
+          print("DCO: all non-merge commits signed off by their author")
+          '
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
