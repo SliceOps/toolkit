@@ -2,7 +2,7 @@
 
 Byte-copies of the five golden examples in
 [sliceops-spec `reference/evidence/examples/`](https://github.com/SliceOps/spec/tree/main/reference/evidence/examples)
-(canonical schema ratified `DR-2026-07-02-evidence-v1-canonical-schema`).
+(canonical schema approved `DEC-2026-07-02-evidence-v1-canonical-schema`).
 Do not edit them here — re-copy from the spec if the golden set changes.
 
 Naming is deliberate (and load-bearing for the toolkit's own CI):

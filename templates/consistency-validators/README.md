@@ -37,7 +37,7 @@ Layers 1–2 are manual (frontmatter discipline, pre-merge checklist, and HITL).
 
 | Check | Enforces |
 |---|---|
-| `evidence-schema` | Every **evidence.v1 record** under `--root` validates against the canonical schema (`schemas/evidence.v1.schema.json`, `$id` `https://sliceops.org/schemas/evidence/evidence.v1.schema.json`, ratified `DR-2026-07-02-evidence-v1-canonical-schema`) — including the machine-enforced **P6 slice-merge completeness**: functional+quality+security checks, ≥1 `decisionRefs`, `provenance` with `sliceId`+`commitSha`. |
+| `evidence-schema` | Every **evidence.v1 record** under `--root` validates against the canonical schema (`schemas/evidence.v1.schema.json`, `$id` `https://sliceops.org/schemas/evidence/evidence.v1.schema.json`, approved `DEC-2026-07-02-evidence-v1-canonical-schema`) — including the machine-enforced **P6 slice-merge completeness**: functional+quality+security checks, ≥1 `decisionRefs`, `provenance` with `sliceId`+`commitSha`. |
 
 **Discovery**: ONLY files ending `.evidence.json` or `.evidence.v1.json` under `--root` (frozen lifecycle dirs excluded, as everywhere). Any filename containing `.example.` is a golden fixture and is **never** validated as a record — the spec repo ships three deliberately-invalid `*.evidence.v1.example.json` fixtures that must not break its CI. A corpus with **zero** evidence records reports `SKIPPED` (green): adopting evidence.v1 is opt-in per corpus.
 
