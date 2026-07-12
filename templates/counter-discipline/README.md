@@ -6,7 +6,7 @@ max claimed number before handing out the next one, reconcile it against the
 `.counters/` bookkeeping file, and claim atomically.
 
 Root-caused by the INS-006 collision incident (parallel chats independently
-created `INS-003` + `HANDOFF-011`): a counter file trusted in isolation
+claimed the same insight and handoff ids): a counter file trusted in isolation
 drifts from the corpus's real state — an artifact created out-of-band, a
 merge from another branch or worktree, a human editing by hand. `claim_id.py`
 never trusts the counter file alone; every claim re-derives the real max from

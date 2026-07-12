@@ -81,7 +81,7 @@ cp naming_validator.py <corpus>/.claude/hooks/naming_validator.py
 cp settings.example.json <corpus>/.claude/settings.json   # or merge the "hooks" key
 ```
 
-The hook + settings live **inside** the corpus, so they sync to every machine with the corpus itself (git/Syncthing) — every session on every machine loads the same gate. Mode: `--hook` reads the PreToolUse JSON on stdin; exit 2 blocks and the stderr message (with the correct name) is fed back to the agent. Fails open on unparseable input — CI/sweeper still gate. The DEC-0010 `_index.md` check never runs in `--hook` mode (it is a corpus-wide concern; the hook validates one write).
+The hook + settings live **inside** the corpus, so they sync to every machine with the corpus itself (git or file sync) — every session on every machine loads the same gate. Mode: `--hook` reads the PreToolUse JSON on stdin; exit 2 blocks and the stderr message (with the correct name) is fed back to the agent. Fails open on unparseable input — CI/sweeper still gate. The DEC-0010 `_index.md` check never runs in `--hook` mode (it is a corpus-wide concern; the hook validates one write).
 
 **3. Sweeper (vaults without CI)** — same `--check`, on a schedule:
 

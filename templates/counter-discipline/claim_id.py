@@ -5,7 +5,7 @@
 # discipline: re-scan the real max before claiming").
 #
 # Root-caused by the INS-006 collision incident (parallel chats independently
-# created INS-003 + HANDOFF-011): a counter FILE alone can drift from the
+# claimed the same ids): a counter FILE alone can drift from the
 # corpus's real max (an artifact created out-of-band, a merge from another
 # branch, a human editing by hand). This tool never trusts the counter file in
 # isolation — it re-scans the corpus for the real max on every claim,
