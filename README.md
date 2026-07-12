@@ -12,7 +12,8 @@
 | `templates/llm-ci-economy/` | **Layer B.2 sub-domain LLM-Inference-Cost-Economy** — workflow demonstrating prompt-caching, model-tier, diff-only context, trigger-set minimalism LLM-aware, and green-not-skipped draft gate |
 | `templates/cost-ledger/` | **Layer B.1** cost-ledger template with three dimensions: token (billed-equivalent), infra/CI, and LLM-API-in-CI (P9) |
 | `templates/consistency-validators/` | **Layer B.1 Layer 3** consistency validators — workflow + deterministic `validators.py` (10 checks: frontmatter-schema, no-orphan-decs, cross-references-bidirectional, topic-tags, counter-atomicity, principle-count-coherence, entity-count-coherence, band-unit, llm-ci-cost, evidence-schema) + the vendored canonical `evidence.v1` schema (`schemas/`, byte-synced to the spec by CI). Stdlib-only; uses PyYAML and jsonschema automatically when installed |
-| `templates/naming-validator/` | **Layer B.1 naming enforcement** (spec v1.2.0 `naming.md` §9) — one `naming_validator.py`, three surfaces: `--check` CI merge gate, `--hook` Claude Code pre-write block (with `settings.example.json`), and the same `--check` as a periodic vault **sweeper**. Blocks retired prefixes (`DR-`, `IN-`, `OC-`, `BR-`, `SKILL-`, `RUN-`, `REF-`…), lifecycle subfolders under `decisions/`, prefix/status mismatches, and non-canonical entity names — every message names the correct form |
+| `templates/naming-validator/` | **Layer B.1 naming enforcement** (DEC-0008/DEC-0009/DEC-0010, v2) — one `naming_validator.py`, three surfaces: `--check` CI merge gate, `--hook` Claude Code pre-write block (with `settings.example.json`), and the same `--check` as a periodic vault **sweeper**. Enforces the universal ID grammar (`PREFIX-NNNN-YYYYMMDD-slug.md`), retired prefixes (`DR-`, `IN-`, `OC-`, `BR-`, `SKILL-`, `RUN-`, `REF-`, and the DEC-0008.2 renames `LP-`/`CF-`/`AP-`…), the DEC kind axis + goal edges, the Goal/Priority pyramid, ContextPack kinds (incl. handoff), the slice coordinate (`SLC…`), and the corpus index (`_index.md`) — every message names the correct form; `--transition` tolerates pre-v2 forms while a corpus migrates |
+| `templates/counter-discipline/` | **Layer B.1 counter discipline** (P9 Shared-Resource Pre-flight, mechanized) — `claim_id.py` re-scans a corpus for the real max claimed number of an entity, reconciles it against `.counters/`, and claims the next id atomically (lockfile + temp-write + `os.replace`) under the DEC-0008.5 universal grammar |
 | `calibration/` | **Layer B.1 Calibration discipline** — deterministic `calibrate.py` (stdlib) parses session `.jsonl` → percentiles (clamped to the observed range) → **canonical** + data-driven **observed** bands; `band-calibration-register.md` is the append-only audit trail |
 
 ## Use it
@@ -41,6 +42,12 @@ python3 calibration/calibrate.py --root path/to/session-jsonl/ --label my-baseli
 ```
 
 **4. Track cost** with the three-dimension [`templates/cost-ledger/`](templates/cost-ledger/) template (token billed-equivalent + infra/CI + LLM-API-in-CI).
+
+**5. Claim a new artifact id** with [`templates/counter-discipline/claim_id.py`](templates/counter-discipline/claim_id.py) before writing an entity file — it re-scans the corpus for the real max, reconciles `.counters/`, and claims atomically:
+
+```bash
+python3 templates/counter-discipline/claim_id.py --root . --entity INS --slug agent-drift-observed
+```
 
 > Design posture: these are **reference templates you adapt**, not a black-box dependency — bind `--root` and the conventions to your layout. The validator is stdlib-only but **uses PyYAML automatically when it's installed** (robust parsing) and **jsonschema when it's installed** (full Draft 2020-12 evidence validation), falling back to documented subsets otherwise (the evidence fallback covers required fields, enums, patterns, top-level `additionalProperties`, and the slice-merge completeness rule — NOT format annotations like RFC 3339 date-times, string length bounds, nested `additionalProperties`, or other deep conditional subtleties); path checks are OS-agnostic (Windows/Linux); an unconfigured `--topic-taxonomy` reports `SKIPPED` (green), a *configured-but-missing* one is a hard error, and a corpus with zero evidence records reports `SKIPPED` (green).
 
