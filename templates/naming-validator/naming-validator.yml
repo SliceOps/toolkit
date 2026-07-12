@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# SliceOps Layer B.1 — naming validator merge gate (spec v1.2.0 naming.md §9).
+# SliceOps Layer B.1 — naming validator merge gate (DEC-0008 / DEC-0009 / DEC-0010 (naming v2)).
 # Vendor-agnostic pattern; GitHub Actions instance (Layer C.2 per adopter).
 # Blocks PRs introducing retired prefixes (DR-, IN-, OC-, BR-, SKILL-, RUN-,
 # REF-…), lifecycle subfolders under decisions/, prefix/status mismatches,

@@ -1,5 +1,5 @@
 {
-  "$comment": "SliceOps naming hook — copy into a corpus as .claude/settings.json (and the validator as .claude/hooks/naming_validator.py). Blocks agent writes of non-homologated names at the point of write (spec v1.2.0 naming.md §9). The hook travels WITH the corpus (git/Syncthing), so every machine enforces the same rule.",
+  "$comment": "SliceOps naming hook — copy into a corpus as .claude/settings.json (and the validator as .claude/hooks/naming_validator.py). Blocks agent writes of non-homologated names at the point of write (DEC-0008 / DEC-0009 / DEC-0010 (naming v2)). The hook travels WITH the corpus (git/Syncthing), so every machine enforces the same rule.",
   "hooks": {
     "PreToolUse": [
       {
