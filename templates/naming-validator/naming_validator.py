@@ -10,7 +10,7 @@
 #
 # Exit codes: 0 = clean · 1 = violations (--check) · 2 = block write (--hook).
 # Every violation message names the CORRECT form. Stdlib only (3.9+), no deps,
-# OS-agnostic — runs identically on Linux (gb10) and macOS (MacBook).
+# OS-agnostic — runs identically on Linux and macOS.
 #
 # Determinism-over-Regeneration (B.2): deterministic rules, same input -> same result.
 #
