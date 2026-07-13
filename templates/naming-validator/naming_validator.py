@@ -6,7 +6,7 @@
 #
 #   1. CHECK / CI merge gate:   python3 naming_validator.py --check <path> [<path>...]
 #   2. Agent pre-write hook:    python3 naming_validator.py --hook   (PreToolUse JSON on stdin)
-#   3. Vault sweeper (no CI):   python3 naming_validator.py --check <vault-root>   (cron/systemd/launchd)
+#   3. Corpus sweeper (no CI):  python3 naming_validator.py --check <corpus-root>  (cron/systemd/launchd)
 #
 # Exit codes: 0 = clean · 1 = violations (--check) · 2 = block write (--hook).
 # Every violation message names the CORRECT form. Stdlib only (3.9+), no deps,
@@ -95,7 +95,7 @@ SKIP_BASENAMES = {"README.md", "CLAUDE.md", "AGENTS.md", "MEMORY.md", "GEMINI.md
                   "DISCLAIMER.md", "DISCLOSURE.md", "TRADEMARK.md", "LEGAL-REVIEW.md",
                   "ATTRIBUTIONS.md", "STATS-PROVENANCE.md"}
 # DEC-0010.5 gives the glob "*-ledger.md"; the real-world precedent artifact
-# (brain/slices/ledger.md) is the bare basename with no hyphenated prefix, so
+# (slices/ledger.md) is the bare basename with no hyphenated prefix, so
 # this also accepts the exact "ledger.md" — the intent (ledgers are reserved
 # operational infrastructure, never entity artifacts) covers both.
 LEDGER_SUFFIX = re.compile(r"(^|-)ledger\.md$", re.I)

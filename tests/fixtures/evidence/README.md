@@ -11,6 +11,6 @@ Naming is deliberate (and load-bearing for the toolkit's own CI):
 |---|---|---|
 | `valid-full-slice-merge.evidence.json` | **renamed** to the real record glob | Discovered by `check_evidence_schema` — doubles as a live record for the toolkit's CI self-application run (it must validate). |
 | `valid-minimal-gated-operation.evidence.json` | **renamed** to the real record glob | Same. |
-| `invalid-*.evidence.v1.example.json` (×3) | original spec names kept | `.example.` filenames are excluded from discovery by design — these are deliberately INVALID and must never be picked up as records by any corpus run (toolkit self-run, spec repo, website, brain). Tests copy them into temp dirs under record names to prove each fails for its intended reason. |
+| `invalid-*.evidence.v1.example.json` (×3) | original spec names kept | `.example.` filenames are excluded from discovery by design — these are deliberately INVALID and must never be picked up as records by any corpus run (toolkit self-run, spec repo, website, adopter corpora). Tests copy them into temp dirs under record names to prove each fails for its intended reason. |
 
 All hashes in the fixtures are the spec's fake repeated-digit placeholders.

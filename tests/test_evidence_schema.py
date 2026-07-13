@@ -83,7 +83,7 @@ class _EvidenceCheckMixin:
 
     def test_skip_when_no_records_found(self):
         # Corpora that have not adopted evidence.v1 must SKIP (green), not fail
-        # — the spec repo, website, and brain all run --checks all from main.
+        # — the spec repo, website, and adopter corpora all run --checks all from main.
         with tempfile.TemporaryDirectory() as d:
             self.assertIsNone(v.check_evidence_schema(d))
 

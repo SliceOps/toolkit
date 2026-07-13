@@ -38,4 +38,4 @@ and proves each check still catches the real defect:
 | the singular "Cognitive Entity" title does not trip entity-count | regex lookbehind |
 | real collisions / wrong counts / missing Layer-1 fields are still caught | positive cases |
 | evidence-schema: golden valid records pass, each golden invalid fails for its intended reason — in full-jsonschema AND stdlib-fallback modes | `test_evidence_schema.py` (v0.2.0) |
-| evidence-schema: zero records → SKIPPED (green); `.example.` filenames never validated | spec-repo/brain CI safety (they run `--checks all` from toolkit main) |
+| evidence-schema: zero records → SKIPPED (green); `.example.` filenames never validated | spec-repo/adopter-corpus CI safety (they run `--checks all` from toolkit main) |

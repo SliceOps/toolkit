@@ -48,14 +48,14 @@ def _dec(kind=None, status="approved", created="2026-05-01", extra=""):
 class RetiredPrefixes(unittest.TestCase):
     def test_each_retired_prefix_names_the_correct_form(self):
         cases = {
-            "brain/DR-0001-20260101-a.md": "DEC-",
-            "brain/IR-0001-20260101-a.md": "INS-",
-            "brain/IN-0001-20260101-a.md": "INS-",
-            "brain/OC-0001-20260101-a.md": "OUTC-",
-            "brain/BR-0001-20260101-a.md": "OUTC-",
-            "brain/SKILL-0001-20260101-a.md": "CAP-",
-            "brain/RUN-0001-20260101-a.md": "CAP-",
-            "brain/REF-0001-20260101-a.md": "CAP-",
+            "corpus/DR-0001-20260101-a.md": "DEC-",
+            "corpus/IR-0001-20260101-a.md": "INS-",
+            "corpus/IN-0001-20260101-a.md": "INS-",
+            "corpus/OC-0001-20260101-a.md": "OUTC-",
+            "corpus/BR-0001-20260101-a.md": "OUTC-",
+            "corpus/SKILL-0001-20260101-a.md": "CAP-",
+            "corpus/RUN-0001-20260101-a.md": "CAP-",
+            "corpus/REF-0001-20260101-a.md": "CAP-",
         }
         for path, want in cases.items():
             errs = _v(path, "")
@@ -65,9 +65,9 @@ class RetiredPrefixes(unittest.TestCase):
     def test_dec0008_retired_prefixes_name_the_plain_word_canonical(self):
         # LP-/CF-/AP- retired by DEC-0008.2 (Conclusion/Frame/Priority renames).
         cases = {
-            "brain/LP-0001-20260101-a.md": "CONC-",
-            "brain/CF-0001-20260101-a.md": "FRAME-",
-            "brain/AP-0001-20260101-a.md": "PRI-",
+            "corpus/LP-0001-20260101-a.md": "CONC-",
+            "corpus/CF-0001-20260101-a.md": "FRAME-",
+            "corpus/AP-0001-20260101-a.md": "PRI-",
         }
         for path, want in cases.items():
             errs = _v(path, "")
@@ -77,7 +77,7 @@ class RetiredPrefixes(unittest.TestCase):
 
     def test_ins_prefix_is_not_misread_as_in(self):
         # INS-0013 must not trip the IN- rule (lookahead requires IN-<digit>).
-        self.assertEqual(_v("brain/INS-0013-20260712-obs.md",
+        self.assertEqual(_v("corpus/INS-0013-20260712-obs.md",
                             "---\nentity: InsightRecord\nstatus: active\n---\n"), [])
 
     def test_infra_is_not_misread_as_in(self):
@@ -117,12 +117,12 @@ class DecLifecycle(unittest.TestCase):
 
 class EntityPrefix(unittest.TestCase):
     def test_entity_without_prefix_suggests_filename(self):
-        errs = _v("brain/priorities/handoffs.md",
+        errs = _v("corpus/priorities/handoffs.md",
                   "---\ndatta_entity: Priority\nstatus: active\nserves-goal: GOAL-0001-20260101-x\nrank: 1\n---\n")
         self.assertTrue(any("PRI-handoffs.md" in e for e in errs))
 
     def test_implementation_alias_maps_to_canonical(self):
-        errs = _v("brain/skills/CAP-0001-20260101-review.md",
+        errs = _v("corpus/skills/CAP-0001-20260101-review.md",
                   "---\ndatta_entity: AgentSkill\nstatus: active\n---\n")
         self.assertTrue(any("implementation alias" in e and "Capability" in e for e in errs))
 
@@ -130,9 +130,9 @@ class EntityPrefix(unittest.TestCase):
         # LearningPattern/CognitiveFramework/ActivePriority are now aliases of
         # Conclusion/Frame/Priority — never their own prefix (DEC-0008.2).
         cases = [
-            ("brain/LP-0001-20260101-x.md", "LearningPattern", "Conclusion"),
-            ("brain/CF-0001-20260101-x.md", "CognitiveFramework", "Frame"),
-            ("brain/AP-0001-20260101-x.md", "ActivePriority", "Priority"),
+            ("corpus/LP-0001-20260101-x.md", "LearningPattern", "Conclusion"),
+            ("corpus/CF-0001-20260101-x.md", "CognitiveFramework", "Frame"),
+            ("corpus/AP-0001-20260101-x.md", "ActivePriority", "Priority"),
         ]
         for path, old, new in cases:
             errs = _v(path, f"---\nentity: {old}\nstatus: active\n---\n")
@@ -148,17 +148,17 @@ class EntityPrefix(unittest.TestCase):
 
 class EnumChecks(unittest.TestCase):
     def test_outcome_requires_kind(self):
-        errs = _v("brain/outcomes/OUTC-0001-20260101-x.md",
+        errs = _v("corpus/outcomes/OUTC-0001-20260101-x.md",
                   "---\ndatta_entity: OutcomeRecord\nstatus: final\n---\n")
         self.assertTrue(any("kind" in e for e in errs))
-        self.assertEqual(_v("brain/outcomes/OUTC-0001-20260101-x.md",
+        self.assertEqual(_v("corpus/outcomes/OUTC-0001-20260101-x.md",
                             "---\ndatta_entity: OutcomeRecord\nkind: result\n---\n"), [])
 
     def test_capability_component_needs_backreference(self):
-        errs = _v("brain/CAP-0002-20260101-runbook.md",
+        errs = _v("corpus/CAP-0002-20260101-runbook.md",
                   "---\nentity: Capability\nkind: runbook\n---\n")
         self.assertTrue(any("capability:" in e for e in errs))
-        self.assertEqual(_v("brain/CAP-0002-20260101-runbook.md",
+        self.assertEqual(_v("corpus/CAP-0002-20260101-runbook.md",
                             "---\nentity: Capability\nkind: runbook\ncapability: pdf-parsing\n---\n"), [])
 
 
@@ -184,8 +184,8 @@ class Exemptions(unittest.TestCase):
             self.assertEqual(_v(base, "---\nentity: DecisionRecord\n---\n"), [], base)
 
     def test_dec0010_ledger_suffix_pattern_exempt(self):
-        for path in ("brain/slices/ledger.md", "brain/slices/slice-ledger.md",
-                     "brain/handoff-ledger.md"):
+        for path in ("corpus/slices/ledger.md", "corpus/slices/slice-ledger.md",
+                     "corpus/handoff-ledger.md"):
             self.assertEqual(_v(path, "---\nentity: DecisionRecord\n---\n"), [], path)
 
 
@@ -377,27 +377,27 @@ class SliceCoordinate(unittest.TestCase):
 
     def test_frontmatter_slc_coordinate_valid_forms_pass(self):
         for coord in ("SLC0012SEC03BL02", "SLC0034"):
-            errs = _v("brain/INS-0001-20260712-x.md",
+            errs = _v("corpus/INS-0001-20260712-x.md",
                       f"---\nentity: InsightRecord\noriginating_slice: {coord}\n---\n")
             self.assertFalse(any("originating_slice" in e for e in errs), (coord, errs))
 
     def test_frontmatter_slc_coordinate_invalid_form_is_error(self):
-        errs = _v("brain/INS-0001-20260712-x.md",
+        errs = _v("corpus/INS-0001-20260712-x.md",
                   "---\nentity: InsightRecord\noriginating_slice: SLC12\n---\n")
         self.assertTrue(any("originating_slice" in e for e in errs))
 
     def test_legacy_dotted_slice_id_is_error_with_suggestion(self):
-        errs = _v("brain/INS-0001-20260712-x.md",
+        errs = _v("corpus/INS-0001-20260712-x.md",
                   "---\nentity: InsightRecord\noriginating_slice: BL-02.SEC-03.SL-012\n---\n")
         self.assertTrue(any("dotted" in e and "SLC" in e for e in errs))
 
     def test_legacy_dotted_slice_id_tolerated_under_transition(self):
-        self.assertEqual(_v("brain/INS-0001-20260712-x.md",
+        self.assertEqual(_v("corpus/INS-0001-20260712-x.md",
                             "---\nentity: InsightRecord\noriginating_slice: BL-02.SEC-03.SL-012\n---\n",
                             transition=True), [])
 
     def test_null_originating_slice_is_not_flagged(self):
-        self.assertEqual(_v("brain/INS-0001-20260712-x.md",
+        self.assertEqual(_v("corpus/INS-0001-20260712-x.md",
                             "---\nentity: InsightRecord\noriginating_slice: null\n---\n"), [])
 
 

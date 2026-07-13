@@ -4,7 +4,7 @@
 # Blocks PRs introducing retired prefixes (DR-, IN-, OC-, BR-, SKILL-, RUN-,
 # REF-…), lifecycle subfolders under decisions/, prefix/status mismatches,
 # and non-canonical entity names. Pairs with the pre-write agent hook
-# (settings.example.json) and the vault sweeper (same script, cron).
+# (settings.example.json) and the corpus sweeper (same script, cron).
 name: naming-validator
 
 on:

@@ -49,7 +49,7 @@ of failing on:
 
 - legacy DecisionRecord `status:` values (same set `--tolerate-legacy-status` covers)
 - pre-v2 filename grammars: date-based (`PREFIX-YYYY-MM-DD-slug.md`, the
-  v1.2.0-era vault scheme) and counter-based 3-digit (`PREFIX-NNN-slug.md`,
+  v1.2.0-era date scheme) and counter-based 3-digit (`PREFIX-NNN-slug.md`,
   pre-homologation repos)
 - a missing root `_index.md`
 - the legacy dotted Slice ID (`BL-XX.SEC-XX.SL-XXX`) in `originating_slice:`
@@ -83,13 +83,13 @@ cp settings.example.json <corpus>/.claude/settings.json   # or merge the "hooks"
 
 The hook + settings live **inside** the corpus, so they sync to every machine with the corpus itself (git or file sync) — every session on every machine loads the same gate. Mode: `--hook` reads the PreToolUse JSON on stdin; exit 2 blocks and the stderr message (with the correct name) is fed back to the agent. Fails open on unparseable input — CI/sweeper still gate. The DEC-0010 `_index.md` check never runs in `--hook` mode (it is a corpus-wide concern; the hook validates one write).
 
-**3. Sweeper (vaults without CI)** — same `--check`, on a schedule:
+**3. Sweeper (corpora without CI)** — same `--check`, on a schedule:
 
 ```bash
 # cron (Linux) — weekly sweep, report by mail/log:
-# 0 8 * * 1  python3 ~/vault/.claude/hooks/naming_validator.py --check ~/vault || notify …
+# 0 8 * * 1  python3 <corpus>/.claude/hooks/naming_validator.py --check <corpus> || notify …
 # launchd (macOS): wrap the same command in a LaunchAgent plist.
-python3 naming_validator.py --check <vault-root>
+python3 naming_validator.py --check <corpus-root>
 ```
 
 Covers human edits (Obsidian/VS Code) and any surface the hook does not see.
