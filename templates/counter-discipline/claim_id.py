@@ -185,7 +185,7 @@ def main():
                      "under the DEC-0008.5 universal grammar (P9 pre-flight, mechanized).")
     ap.add_argument("--root", required=True, metavar="PATH", help="corpus root to scan and claim within")
     ap.add_argument("--entity", required=True, metavar="PREFIX",
-                    help="entity prefix, e.g. DEC, INS, CP, GOAL, CONC, FRAME, PRI, OUTC, CAP, REL, PREF, VAL, SESS")
+                    help="entity prefix, e.g. DEC, INS, CP, GOAL, CONC, MM, POL, PRI, OUTC, CAP, REL, PREF, VAL, SESS")
     ap.add_argument("--slug", metavar="SLUG", help="kebab-case slug; if given, also prints the full filename")
     ap.add_argument("--date", metavar="YYYYMMDD", help="creation date, compact form (default: today)")
     args = ap.parse_args()

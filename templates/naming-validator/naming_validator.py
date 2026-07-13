@@ -28,15 +28,17 @@ import sys
 DEC8 = "DEC-0008"
 DEC9 = "DEC-0009"
 DEC10 = "DEC-0010"
+DEC12 = "DEC-0012"
 
-# entity -> canonical prefix (the 13-entity catalog, DEC-0008.2.1; DEC lifecycle
-# variants carry state in the prefix per DEC-0008.5 rule 3).
+# entity -> canonical prefix (the 14-entity catalog: DEC-0008.2.1 as amended by
+# DEC-0012 — MentalModel rename + Policy; DEC lifecycle variants carry state in
+# the prefix per DEC-0008.5 rule 3).
 CANON = {
     "DecisionRecord": "DEC-", "InsightRecord": "INS-", "OutcomeRecord": "OUTC-",
     "Capability": "CAP-", "Goal": "GOAL-", "Conclusion": "CONC-",
-    "Frame": "FRAME-", "ContextPack": "CP-", "Priority": "PRI-",
+    "MentalModel": "MM-", "ContextPack": "CP-", "Priority": "PRI-",
     "RelationshipContext": "REL-", "Preference": "PREF-", "Value": "VAL-",
-    "Session": "SESS-",
+    "Session": "SESS-", "Policy": "POL-",
 }
 DEC_PREFIXES = ("DEC-P-", "DEC-D-", "DEC-")  # longest first
 
@@ -47,8 +49,9 @@ IMPL_ALIAS = {
     "AgentPreference": "Preference",
     # DEC-0008.2 renames: the OLD entity names are now implementation aliases
     # of the plain-word canonical ones — never their own prefix again.
-    "LearningPattern": "Conclusion", "CognitiveFramework": "Frame",
-    "ActivePriority": "Priority",
+    # DEC-0012.1: Frame itself was renamed once more, to MentalModel.
+    "LearningPattern": "Conclusion", "CognitiveFramework": "MentalModel",
+    "Frame": "MentalModel", "ActivePriority": "Priority",
 }
 
 # Retired filename prefixes: (regex, display, correct form, citation).
@@ -64,7 +67,8 @@ RETIRED = [
     (re.compile(r"^RUN-"), "RUN-", "CAP- (a runbook is a Capability component: kind: runbook)", DEC8),
     (re.compile(r"^REF-"), "REF-", "retired catch-all: coding standards -> CAP-, patterns -> CONC-, third-party integrations -> vendor connector entity", DEC8),
     (re.compile(r"^LP-"), "LP-", "CONC- (Conclusion — DEC-0008.2 rename)", DEC8),
-    (re.compile(r"^CF-"), "CF-", "FRAME- (Frame — DEC-0008.2 rename)", DEC8),
+    (re.compile(r"^CF-"), "CF-", "MM- (MentalModel — DEC-0012.1 rename)", DEC12),
+    (re.compile(r"^FRAME-"), "FRAME-", "MM- (MentalModel — DEC-0012.1 rename)", DEC12),
     (re.compile(r"^AP-"), "AP-", "PRI- (Priority — DEC-0008.2 rename)", DEC8),
 ]
 
@@ -76,6 +80,12 @@ CAP_KINDS = {"standard", "runbook", "playbook"}
 DEC_KINDS = {"constitutive", "strategic", "tactical"}
 CP_KINDS = {"pack", "brief", "handoff"}
 CP_HANDOFF_REASONS = {"context-exhausted", "spinoff"}
+# Policy (DEC-0012.2). Scope values are the canonical set; vendors MAY extend
+# them in their own runtimes (Layer C) — extensions are validated by vendor
+# tooling, not by this reference validator.
+POL_SCOPES = {"environment", "agent", "corpus", "session"}
+POL_SEVERITIES = {"block", "warn"}
+POL_STATUS = {"active", "deprecated"}
 LIFECYCLE_DIRS = {"accepted", "rfcs", "superseded", "deprecated"}
 
 # DEC-0008.3: kind: is OBLIGATORY only for DECs created on/after this date
@@ -107,14 +117,14 @@ LEDGER_SUFFIX = re.compile(r"(^|-)ledger\.md$", re.I)
 #  separately, downstream, against the specific canonical value sets.
 FM_KEY = re.compile(r'^\s*(entity|[a-z][a-z0-9]*_entity|primary-entity|status|kind|capability|'
                      r'originating_slice|serves-goal|defines-goal|decided-by|rank|priority|'
-                     r'reason|approver|created):\s*"?([^"#\n]+?)"?\s*(?:#.*)?$')
+                     r'reason|approver|created|scope|severity|enforced-by):\s*"?([^"#\n]+?)"?\s*(?:#.*)?$')
 # defines-goal / serves-value / etc. can be list-valued (`[GOAL-..., ...]`); the
 # scalar FM_KEY above only needs to detect PRESENCE for the edge-coherence
 # checks, so a non-empty match (scalar or the literal `[...]` text) is enough.
 
 # Universal ID grammar (DEC-0008.5): PREFIX-NNNN-YYYYMMDD-slug.md
 # Prefix alternation is longest-first so DEC-P-/DEC-D- match before bare DEC-.
-_PREFIX_ALT = "DEC-P|DEC-D|DEC|INS|OUTC|CAP|GOAL|CONC|FRAME|CP|PRI|REL|PREF|VAL|SESS"
+_PREFIX_ALT = "DEC-P|DEC-D|DEC|INS|OUTC|CAP|GOAL|CONC|MM|CP|POL|PRI|REL|PREF|VAL|SESS"
 UNIVERSAL_GRAMMAR = re.compile(
     r"^(?:%s)-(\d{4,})-(\d{8})-([a-z0-9][a-z0-9-]*)\.md$" % _PREFIX_ALT)
 # Any recognizable entity-prefix lead (used to decide whether a name that fails
@@ -332,6 +342,20 @@ def validate_file(path, text, tolerate_legacy=False, transition=False):
                 if reason and reason not in CP_HANDOFF_REASONS:
                     errs.append(f"{p}: ContextPack kind: handoff reason '{reason}' invalid — "
                                 f"use context-exhausted|spinoff ({DEC9})")
+
+    # 10b) Policy scope/severity/status (DEC-0012.2)
+    if entity == "Policy":
+        scope = fm.get("scope")
+        if not scope:
+            errs.append(f"{p}: Policy requires scope: environment|agent|corpus|session ({DEC12}.2)")
+        elif scope not in POL_SCOPES:
+            errs.append(f"{p}: Policy scope '{scope}' not canonical — use environment|agent|corpus|session "
+                        f"(vendor extensions are Layer C, validated by vendor tooling) ({DEC12}.2)")
+        severity = fm.get("severity")
+        if severity and severity not in POL_SEVERITIES:
+            errs.append(f"{p}: Policy severity '{severity}' invalid — use block|warn ({DEC12}.2)")
+        if status and status not in POL_STATUS:
+            errs.append(f"{p}: Policy status '{status}' invalid — use active|deprecated ({DEC12}.2)")
 
     # 11) Slice coordinate — frontmatter form (DEC-0008.6)
     slice_val = fm.get("originating_slice")

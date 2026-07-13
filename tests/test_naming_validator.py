@@ -63,17 +63,19 @@ class RetiredPrefixes(unittest.TestCase):
             self.assertIn(want, errs[0])
 
     def test_dec0008_retired_prefixes_name_the_plain_word_canonical(self):
-        # LP-/CF-/AP- retired by DEC-0008.2 (Conclusion/Frame/Priority renames).
+        # LP-/AP- retired by DEC-0008.2 (Conclusion/Priority renames); CF- and
+        # FRAME- both point to MM- after the DEC-0012.1 MentalModel rename.
         cases = {
-            "corpus/LP-0001-20260101-a.md": "CONC-",
-            "corpus/CF-0001-20260101-a.md": "FRAME-",
-            "corpus/AP-0001-20260101-a.md": "PRI-",
+            "corpus/LP-0001-20260101-a.md": ("CONC-", "DEC-0008"),
+            "corpus/CF-0001-20260101-a.md": ("MM-", "DEC-0012"),
+            "corpus/FRAME-0001-20260101-a.md": ("MM-", "DEC-0012"),
+            "corpus/AP-0001-20260101-a.md": ("PRI-", "DEC-0008"),
         }
-        for path, want in cases.items():
+        for path, (want, cite) in cases.items():
             errs = _v(path, "")
             self.assertTrue(errs, path)
             self.assertIn(want, errs[0])
-            self.assertIn("DEC-0008", errs[0])
+            self.assertIn(cite, errs[0])
 
     def test_ins_prefix_is_not_misread_as_in(self):
         # INS-0013 must not trip the IN- rule (lookahead requires IN-<digit>).
@@ -128,10 +130,12 @@ class EntityPrefix(unittest.TestCase):
 
     def test_dec0008_old_entity_names_are_implementation_aliases(self):
         # LearningPattern/CognitiveFramework/ActivePriority are now aliases of
-        # Conclusion/Frame/Priority — never their own prefix (DEC-0008.2).
+        # Conclusion/MentalModel/Priority — never their own prefix (DEC-0008.2);
+        # Frame itself is an alias of MentalModel since DEC-0012.1.
         cases = [
             ("corpus/LP-0001-20260101-x.md", "LearningPattern", "Conclusion"),
-            ("corpus/CF-0001-20260101-x.md", "CognitiveFramework", "Frame"),
+            ("corpus/CF-0001-20260101-x.md", "CognitiveFramework", "MentalModel"),
+            ("corpus/MM-0001-20260101-x.md", "Frame", "MentalModel"),
             ("corpus/AP-0001-20260101-x.md", "ActivePriority", "Priority"),
         ]
         for path, old, new in cases:
@@ -202,7 +206,8 @@ class UniversalGrammar(unittest.TestCase):
             ("capabilities/CAP-0001-20260712-slug.md", "Capability"),
             ("goals/GOAL-0001-20260712-slug.md", "Goal"),
             ("conclusions/CONC-0001-20260712-slug.md", "Conclusion"),
-            ("frames/FRAME-0001-20260712-slug.md", "Frame"),
+            ("mental-models/MM-0001-20260712-slug.md", "MentalModel"),
+            ("policies/POL-0001-20260713-slug.md", "Policy"),
             ("packs/CP-0028-20260712-slug.md", "ContextPack"),
             ("priorities/PRI-0001-20260712-slug.md", "Priority"),
             ("relationships/REL-0001-20260712-slug.md", "RelationshipContext"),
@@ -222,8 +227,23 @@ class UniversalGrammar(unittest.TestCase):
                 fm = "---\nentity: Priority\nstatus: open\nserves-goal: GOAL-0001-20260712-slug\nrank: 1\n---\n"
             elif entity == "OutcomeRecord":
                 fm = "---\nentity: OutcomeRecord\nkind: result\n---\n"
+            elif entity == "Policy":
+                fm = "---\nentity: Policy\nstatus: active\nscope: corpus\nseverity: block\n---\n"
             errs = _v(path, fm)
             self.assertEqual(errs, [], f"{path}: {errs}")
+
+    def test_policy_scope_required_and_enums(self):
+        # DEC-0012.2: scope is mandatory; scope/severity/status are enum-checked.
+        base = "policies/POL-0001-20260713-x.md"
+        errs = _v(base, "---\nentity: Policy\nstatus: active\n---\n")
+        self.assertTrue(any("requires scope" in e for e in errs), errs)
+        errs = _v(base, "---\nentity: Policy\nstatus: active\nscope: workspace\n---\n")
+        self.assertTrue(any("not canonical" in e and "Layer C" in e for e in errs), errs)
+        errs = _v(base, "---\nentity: Policy\nstatus: active\nscope: session\nseverity: fatal\n---\n")
+        self.assertTrue(any("severity 'fatal'" in e for e in errs), errs)
+        errs = _v(base, "---\nentity: Policy\nstatus: approved\nscope: corpus\n---\n")
+        self.assertTrue(any("status 'approved'" in e for e in errs), errs)
+        self.assertEqual(_v(base, "---\nentity: Policy\nstatus: active\nscope: agent\nseverity: warn\n---\n"), [])
 
     def test_min_four_digit_counter_unbounded_above(self):
         self.assertEqual(_v("insights/INS-10000-20260712-slug.md",
