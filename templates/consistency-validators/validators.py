@@ -101,12 +101,30 @@ def read_frontmatter(path):
     return fm, body
 
 
+_VERSION_DIR = re.compile(r"^v\d+\.\d+\.\d+$")
+
+
+def _current_version_dir(root):
+    """Frozen published spec versions (spec/vX.Y.Z) are immutable history and
+    carry their own era's literals — only the CURRENT version (the spec/latest
+    symlink target) is live corpus for coherence checks. Returns None when the
+    corpus has no versioned spec (non-spec corpora: nothing is skipped)."""
+    try:
+        return os.path.basename(os.readlink(os.path.join(root, "spec", "latest")))
+    except OSError:
+        return None
+
+
 def find_docs(root):
+    current = _current_version_dir(root)
     for dirpath, _, files in os.walk(root):
         # Skip VCS + frozen lifecycle dirs (immutable history, not live corpus).
         # OS-agnostic part match — os.walk yields '\\' on Windows.
-        if _norm_parts(dirpath) & _SKIP_DIRS:
+        parts = _norm_parts(dirpath)
+        if parts & _SKIP_DIRS:
             continue
+        if any(_VERSION_DIR.match(p) and p != current for p in parts):
+            continue  # frozen published version dir (kept for audit, own-era literals)
         for f in files:
             if f.endswith(".md") and f != "README.md" and not _FROZEN_FILE.match(f):
                 yield os.path.join(dirpath, f)
