@@ -23,7 +23,7 @@ Normative source — never redefined here, only pointed at:
 |---|---|
 | Universal ID grammar | filename not matching `PREFIX-NNNN-YYYYMMDD-slug.md` (min 4-digit zero-padded counter, unbounded; compact 8-digit date; kebab-case lowercase slug) → suggested shape (DEC-0008.5) |
 | Retired prefixes | `DR-`/`IN-`/`IR-`/`OC-`/`BR-`/`SKILL-`/`RUN-`/`REF-`/`LP-`/`CF-`/`AP-` file → the canonical prefix to use (the last three retired by the DEC-0008.2 plain-word renames: `LP-`→`CONC-`, `CF-`→`FRAME-`, `AP-`→`PRI-`) |
-| Entity ↔ prefix | frontmatter entity (`entity:` / `datta_entity:` / `primary-entity:`) whose file lacks its canonical prefix → suggested filename |
+| Entity ↔ prefix | frontmatter entity (`entity:` / a runtime-mapped `*_entity:` key / `primary-entity:`) whose file lacks its canonical prefix → suggested filename |
 | Implementation aliases | `AgentSkill`/`AgentContextPack`/`GoalObjective`/`ValuePrinciple`/`AgentPreference`, **and** the pre-DEC-0008 entity names `LearningPattern`/`CognitiveFramework`/`ActivePriority` → canonical plain-word name |
 | DEC lifecycle | `status:` not in `pending\|approved\|deprecated`; prefix/status mismatch (`DEC-P-` with `approved`, …); flat `decisions/` (no lifecycle subfolders) |
 | DEC kind axis | `kind:` not in `constitutive\|strategic\|tactical`; `strategic` without `defines-goal:`; `tactical` without `serves-goal:`; `constitutive` + `status: approved` without `approver:`; `kind:` missing on a DecisionRecord created on/after 2026-07-13 (earlier DECs back-fill fix-on-touch) (DEC-0008.3) |

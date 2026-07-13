@@ -704,7 +704,7 @@ def main():
     ap.add_argument("--checks", default="all")
     ap.add_argument("--topic-taxonomy", default="")
     # The portable canonical entity key is `entity`. A runtime may instantiate
-    # entities under a mapped key (Layer C.1) — e.g. `--entity-key datta_entity`
+    # entities under a mapped key (Layer C.1) — e.g. `--entity-key runtime_entity`
     # — without the vendor-neutral spec prescribing that key.
     ap.add_argument("--entity-key", default="entity")
     args = ap.parse_args()

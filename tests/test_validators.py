@@ -244,15 +244,15 @@ class BidirectionalConvention(unittest.TestCase):
             self.assertEqual(v.check_bidirectional(docs), [])
 
     def test_custom_entity_key(self):
-        # Runtime-mapped entity key (e.g. datta_entity) is honored.
+        # Runtime-mapped entity key (e.g. runtime_entity) is honored.
         with tempfile.TemporaryDirectory() as d:
-            _write(d, "decisions/DEC-A.md", _dr(["DEC-B"], "datta_entity"))
-            _write(d, "decisions/DEC-B.md", _dr([], "datta_entity"))
+            _write(d, "decisions/DEC-A.md", _dr(["DEC-B"], "runtime_entity"))
+            _write(d, "decisions/DEC-B.md", _dr([], "runtime_entity"))
             docs = {p: v.read_frontmatter(p) for p in v.find_docs(d)}
             # Default key 'entity' → sources unrecognized → no enforcement.
             self.assertEqual(v.check_bidirectional(docs), [])
             # Mapped key → the one-way pair is caught.
-            errs = v.check_bidirectional(docs, "datta_entity")
+            errs = v.check_bidirectional(docs, "runtime_entity")
             self.assertEqual(len(errs), 1)
 
 

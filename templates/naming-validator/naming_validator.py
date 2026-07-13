@@ -105,7 +105,7 @@ LEDGER_SUFFIX = re.compile(r"(^|-)ledger\.md$", re.I)
 #  ASCII enum-only class: this key set mixes enum-like fields (status, kind)
 #  with free-text ones (approver, decided-by). Strict enum SHAPE is validated
 #  separately, downstream, against the specific canonical value sets.
-FM_KEY = re.compile(r'^\s*(entity|datta_entity|primary-entity|status|kind|capability|'
+FM_KEY = re.compile(r'^\s*(entity|[a-z][a-z0-9]*_entity|primary-entity|status|kind|capability|'
                      r'originating_slice|serves-goal|defines-goal|decided-by|rank|priority|'
                      r'reason|approver|created):\s*"?([^"#\n]+?)"?\s*(?:#.*)?$')
 # defines-goal / serves-value / etc. can be list-valued (`[GOAL-..., ...]`); the
@@ -160,7 +160,11 @@ def frontmatter(text):
 
 
 def entity_of(fm):
-    return fm.get("entity") or fm.get("datta_entity") or fm.get("primary-entity")
+    # `entity` is the portable canonical key; a runtime MAY map it to its own
+    # `<runtime>_entity` key (Layer C.1) — any `*_entity` key is honored without
+    # the vendor-neutral tooling naming a specific vendor.
+    mapped = next((v for k, v in fm.items() if k.endswith("_entity")), None)
+    return fm.get("entity") or mapped or fm.get("primary-entity")
 
 
 def is_reserved_name(base):
