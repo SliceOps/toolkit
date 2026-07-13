@@ -84,11 +84,11 @@
     }
   ],
   "provenance": {
-    "sliceId": "BL-07.SEC-03.SL-041",
+    "sliceId": "SLC0041SEC03BL07",
     "commitSha": "a1b2c3d4e5f6789012345678901234567890abcd",
     "sessionRef": "agent-session/2026-07-02/refund-endpoint-slice"
   },
-  "decisionRefs": ["DEC-021", "INS-014"],
+  "decisionRefs": ["DEC-0021", "INS-0014"],
   "redaction": {
     "status": "applied",
     "rules": ["no-secrets-in-evidence", "log-redaction-v1"]

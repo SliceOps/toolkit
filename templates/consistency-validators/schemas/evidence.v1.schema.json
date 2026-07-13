@@ -34,16 +34,31 @@
     },
     "status": {
       "description": "Overall outcome of the operation. P6 hard gate: a slice does not merge unless its slice-merge record is 'passed'.",
-      "enum": ["passed", "failed", "inconclusive", "skipped", "stale", "blocked"]
+      "enum": [
+        "passed",
+        "failed",
+        "inconclusive",
+        "skipped",
+        "stale",
+        "blocked"
+      ]
     },
     "actor": {
       "description": "Who or what executed the operation — part of the P6 provenance category (agent attribution).",
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "id"],
+      "required": [
+        "type",
+        "id"
+      ],
       "properties": {
         "type": {
-          "enum": ["human", "agent", "tool", "system"]
+          "enum": [
+            "human",
+            "agent",
+            "tool",
+            "system"
+          ]
         },
         "id": {
           "type": "string",
@@ -113,10 +128,17 @@
       "description": "Secrets-redaction attestation (P7 secrets policy: never in evidence, logs, or the audit plane). 'failed' redaction must fail the gate consuming this record.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "rules"],
+      "required": [
+        "status",
+        "rules"
+      ],
       "properties": {
         "status": {
-          "enum": ["applied", "not-needed", "failed"]
+          "enum": [
+            "applied",
+            "not-needed",
+            "failed"
+          ]
         },
         "rules": {
           "type": "array",
@@ -143,14 +165,22 @@
             "const": "slice-merge"
           }
         },
-        "required": ["operationType"]
+        "required": [
+          "operationType"
+        ]
       },
       "then": {
         "description": "P6: every slice-merge record carries all four evidence categories plus the P7 security gate. Checks not executed are recorded with status 'skipped' — enumerated, never silently absent.",
-        "required": ["provenance", "decisionRefs"],
+        "required": [
+          "provenance",
+          "decisionRefs"
+        ],
         "properties": {
           "provenance": {
-            "required": ["sliceId", "commitSha"]
+            "required": [
+              "sliceId",
+              "commitSha"
+            ]
           },
           "decisionRefs": {
             "minItems": 1
@@ -159,20 +189,38 @@
             "allOf": [
               {
                 "contains": {
-                  "properties": { "category": { "const": "functional" } },
-                  "required": ["category"]
+                  "properties": {
+                    "category": {
+                      "const": "functional"
+                    }
+                  },
+                  "required": [
+                    "category"
+                  ]
                 }
               },
               {
                 "contains": {
-                  "properties": { "category": { "const": "quality" } },
-                  "required": ["category"]
+                  "properties": {
+                    "category": {
+                      "const": "quality"
+                    }
+                  },
+                  "required": [
+                    "category"
+                  ]
                 }
               },
               {
                 "contains": {
-                  "properties": { "category": { "const": "security" } },
-                  "required": ["category"]
+                  "properties": {
+                    "category": {
+                      "const": "security"
+                    }
+                  },
+                  "required": [
+                    "category"
+                  ]
                 }
               }
             ]
@@ -185,7 +233,11 @@
     "artifact": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "id", "hash"],
+      "required": [
+        "kind",
+        "id",
+        "hash"
+      ],
       "properties": {
         "kind": {
           "description": "Artifact kind (lowercase token). Recommended values: source, bundle, report, sbom, attestation, manifest, log, dataset. Vendor-specific kinds are Layer C — prefer carrying them here as plain tokens and their semantics under 'extensions'.",
@@ -209,7 +261,12 @@
     "check": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "category", "status", "severity"],
+      "required": [
+        "id",
+        "category",
+        "status",
+        "severity"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -217,13 +274,28 @@
         },
         "category": {
           "description": "Evidence category of this check: 'functional' and 'quality' per P6, 'security' per P7.",
-          "enum": ["functional", "quality", "security"]
+          "enum": [
+            "functional",
+            "quality",
+            "security"
+          ]
         },
         "status": {
-          "enum": ["passed", "failed", "warning", "skipped", "blocked"]
+          "enum": [
+            "passed",
+            "failed",
+            "warning",
+            "skipped",
+            "blocked"
+          ]
         },
         "severity": {
-          "enum": ["info", "warning", "error", "critical"]
+          "enum": [
+            "info",
+            "warning",
+            "error",
+            "critical"
+          ]
         },
         "message": {
           "type": "string",
@@ -234,7 +306,10 @@
     "traceRef": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["executionId", "traceHash"],
+      "required": [
+        "executionId",
+        "traceHash"
+      ],
       "properties": {
         "executionId": {
           "type": "string",
@@ -248,14 +323,14 @@
       }
     },
     "sliceId": {
-      "description": "Canonical SliceOps slice identifier: Block, optional Section, Slice.",
+      "description": "Canonical SliceOps slice coordinate SLC[n]SEC[n]BL[n] (spec v2.0.0, DEC-0008.6). The dotted pre-v2 form is read-tolerated for records in immutable history.",
       "type": "string",
-      "pattern": "^BL-[0-9]{2,}(\\.SEC-[0-9]{2,})?\\.SL-[0-9]{3}[a-z]?$"
+      "pattern": "^(SLC[0-9]{4,}(SEC[0-9]{2,})?(BL[0-9]{2,})?|BL-[0-9]{2,}(\\.SEC-[0-9]{2,})?\\.SL-[0-9]{3}[a-z]?)$"
     },
     "decisionRef": {
-      "description": "Canonical decision/insight reference: date-slug DecisionRecords (DEC-YYYY-MM-DD-slug, lifecycle prefixes DEC-P-/DEC-D- included) or counter-based artifact ids (e.g. DEC-021, INS-014). Legacy DR- date-slug ids remain read-tolerated for pre-homologation archives (spec v1.2.0 naming.md §3).",
+      "description": "Canonical artifact reference under the universal grammar PREFIX-NNNN-YYYYMMDD-slug (spec v2.0.0 naming.md) or its short citation form (e.g. DEC-0021, INS-0014). Pre-v2 date-based and 3-digit forms (legacy DR- included) remain read-tolerated for pre-homologation archives.",
       "type": "string",
-      "pattern": "^((?:DEC(?:-[PD])?|DR)-[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9][a-z0-9-]*|DEC(?:-[PD])?-[0-9]{1,6}|[A-Z]{2,6}-[0-9]{1,6})$"
+      "pattern": "^([A-Z]{2,6}(?:-[PD])?-[0-9]{4,}-[0-9]{8}-[a-z0-9][a-z0-9-]*|(?:DEC(?:-[PD])?|DR)-[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9][a-z0-9-]*|[A-Z]{2,6}(?:-[PD])?-[0-9]{1,6})$"
     }
   }
 }
