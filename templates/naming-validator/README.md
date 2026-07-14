@@ -21,15 +21,15 @@ Normative source — never redefined here, only pointed at:
 
 | Rule | Violation → message |
 |---|---|
-| Universal ID grammar | filename not matching `PREFIX-NNNN-YYYYMMDD-slug.md` (min 4-digit zero-padded counter, unbounded; compact 8-digit date; kebab-case lowercase slug) → suggested shape (DEC-0008.5) |
-| Retired prefixes | `DR-`/`IN-`/`IR-`/`OC-`/`BR-`/`SKILL-`/`RUN-`/`REF-`/`LP-`/`CF-`/`AP-` file → the canonical prefix to use (the last three retired by the DEC-0008.2 plain-word renames: `LP-`→`CONC-`, `CF-`→`FRAME-`, `AP-`→`PRI-`) |
+| Universal ID grammar | filename not matching `PREFIX-NNNN-YYYYMMDD-slug.md` (min 4-digit zero-padded counter, unbounded; compact 8-digit date; kebab-case lowercase slug) → suggested shape (DEC-0008_5) |
+| Retired prefixes | `DR-`/`IN-`/`IR-`/`OC-`/`BR-`/`SKILL-`/`RUN-`/`REF-`/`LP-`/`CF-`/`AP-` file → the canonical prefix to use (the last three retired by the DEC-0008_2 plain-word renames: `LP-`→`CONC-`, `CF-`→`FRAME-`, `AP-`→`PRI-`) |
 | Entity ↔ prefix | frontmatter entity (`entity:` / a runtime-mapped `*_entity:` key / `primary-entity:`) whose file lacks its canonical prefix → suggested filename |
 | Implementation aliases | `AgentSkill`/`AgentContextPack`/`GoalObjective`/`ValuePrinciple`/`AgentPreference`, **and** the pre-DEC-0008 entity names `LearningPattern`/`CognitiveFramework`/`ActivePriority` → canonical plain-word name |
 | DEC lifecycle | `status:` not in `pending\|approved\|deprecated`; prefix/status mismatch (`DEC-P-` with `approved`, …); flat `decisions/` (no lifecycle subfolders) |
-| DEC kind axis | `kind:` not in `constitutive\|strategic\|tactical`; `strategic` without `defines-goal:`; `tactical` without `serves-goal:`; `constitutive` + `status: approved` without `approver:`; `kind:` missing on a DecisionRecord created on/after 2026-07-13 (earlier DECs back-fill fix-on-touch) (DEC-0008.3) |
-| Pyramid | `Goal` without `decided-by:`; `Priority` without `serves-goal:` or integer `rank:`; `priority: high\|medium\|low` (retired — use `rank:`) (DEC-0008.4) |
+| DEC kind axis | `kind:` not in `constitutive\|strategic\|tactical`; `strategic` without `defines-goal:`; `tactical` without `serves-goal:`; `constitutive` + `status: approved` without `approver:`; `kind:` missing on a DecisionRecord created on/after 2026-07-13 (earlier DECs back-fill fix-on-touch) (DEC-0008_3) |
+| Pyramid | `Goal` without `decided-by:`; `Priority` without `serves-goal:` or integer `rank:`; `priority: high\|medium\|low` (retired — use `rank:`) (DEC-0008_4) |
 | ContextPack kinds | `kind:` not in `pack\|brief\|handoff`; `kind: handoff` with `reason:` not in `context-exhausted\|spinoff` (DEC-0009) |
-| Slice coordinate | filename leading `SLC` not matching `SLC\d{4,}(SEC\d{2,})?(BL\d{2,})?-YYYYMMDD-slug.md`; frontmatter `originating_slice:` not matching the bare coordinate; the retired dotted form (`BL-XX.SEC-XX.SL-XXX`) → SLC suggestion (DEC-0008.6) |
+| Slice coordinate | filename leading `SLC` not matching `SLC\d{4,}(SEC\d{2,})?(BL\d{2,})?-YYYYMMDD-slug.md`; frontmatter `originating_slice:` not matching the bare coordinate; the retired dotted form (`BL-XX.SEC-XX.SL-XXX`) → SLC suggestion (DEC-0008_6) |
 | Corpus index | (directory `--check` targets only) missing root `_index.md`; any route-table target in `_index.md` that does not resolve on disk (DEC-0010) |
 | OutcomeRecord | missing/invalid `kind: retrospective\|postmortem\|result` |
 | Capability components | `kind:` not in `standard\|runbook\|playbook`, or component without `capability:` back-reference |
@@ -38,7 +38,7 @@ Out of scope (by design): entities outside the 13-entity catalog (vendor
 extensions — validated by the vendor), files without entity frontmatter and
 without a retired/recognizable entity prefix (freeform notes),
 `99-archive/` and other excluded dirs (immutable history), `*-template.md`
-skeletons, and the reserved-name infrastructure list (DEC-0010.5):
+skeletons, and the reserved-name infrastructure list (DEC-0010_5):
 `README.md`, `CLAUDE.md`/`AGENTS.md`, `MEMORY.md`, `GEMINI.md`,
 `_organization.md`, `_index.md`, `*-ledger.md`.
 
@@ -106,4 +106,4 @@ for the real max before claiming), see
 Reference template you adapt (bind roots/conventions to your layout). The
 rules mirror DEC-0008/0009/0010 — the DECs are the single normative source;
 this script points at them in every message and never redefines the catalog
-table (DEC-0008.2.1 is single source).
+table (DEC-0008_2_1 is single source).

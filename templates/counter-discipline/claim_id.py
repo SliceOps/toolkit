@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 # SliceOps Layer B.1 — counter-discipline: the P9 Shared-Resource Pre-flight,
-# mechanized (DEC-0008.5 rule 1: "every corpus REQUIRES the .counters/
+# mechanized (DEC-0008_5 rule 1: "every corpus REQUIRES the .counters/
 # discipline: re-scan the real max before claiming").
 #
 # Root-caused by the INS-006 collision incident (parallel chats independently
@@ -33,9 +33,9 @@ import re
 import sys
 import time
 
-# Grammar per DEC-0008.5: PREFIX-NNNN-YYYYMMDD-slug.md, minimum 4-digit
+# Grammar per DEC-0008_5: PREFIX-NNNN-YYYYMMDD-slug.md, minimum 4-digit
 # zero-padded counter, unbounded above. The DEC lifecycle infix (-P-/-D-)
-# shares ONE counter across lifecycle states (DEC-0008.5 rule 3): a new
+# shares ONE counter across lifecycle states (DEC-0008_5 rule 3): a new
 # DEC-0008 colliding with an existing DEC-D-0008 is a detected error, so the
 # infix is stripped before the counter is read — never treated as a separate
 # per-lifecycle sequence.
@@ -182,7 +182,7 @@ def claim(root, entity, date=None, slug=None):
 def main():
     ap = argparse.ArgumentParser(
         description="SliceOps counter-discipline — claim the next id for an entity "
-                     "under the DEC-0008.5 universal grammar (P9 pre-flight, mechanized).")
+                     "under the DEC-0008_5 universal grammar (P9 pre-flight, mechanized).")
     ap.add_argument("--root", required=True, metavar="PATH", help="corpus root to scan and claim within")
     ap.add_argument("--entity", required=True, metavar="PREFIX",
                     help="entity prefix, e.g. DEC, INS, CP, GOAL, CONC, MM, POL, PRI, OUTC, CAP, REL, PREF, VAL, SESS")
@@ -195,7 +195,7 @@ def main():
         print(f"claim_id: --entity must be letters only (e.g. DEC, INS, CP) — got '{args.entity}'", file=sys.stderr)
         sys.exit(1)
     if args.slug is not None and not re.match(r"^[a-z0-9][a-z0-9-]*$", args.slug):
-        print(f"claim_id: --slug must be kebab-case lowercase (DEC-0008.5 rule 4) — got '{args.slug}'", file=sys.stderr)
+        print(f"claim_id: --slug must be kebab-case lowercase (DEC-0008_5 rule 4) — got '{args.slug}'", file=sys.stderr)
         sys.exit(1)
     if args.date is not None and not re.match(r"^\d{8}$", args.date):
         print(f"claim_id: --date must be YYYYMMDD (8 digits, compact) — got '{args.date}'", file=sys.stderr)

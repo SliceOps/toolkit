@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-# Regression tests for templates/counter-discipline/claim_id.py (DEC-0008.5
+# Regression tests for templates/counter-discipline/claim_id.py (DEC-0008_5
 # rule 1: the P9 Shared-Resource Pre-flight, mechanized).
 # Stdlib only (unittest + tempfile), Python 3.9+.
 
@@ -84,7 +84,7 @@ class ReconciliationAgainstRealMax(unittest.TestCase):
 
 class LifecycleInfix(unittest.TestCase):
     def test_dec_d_prefix_advances_the_shared_dec_counter(self):
-        # DEC-0008.5 rule 3: one counter per entity, SHARED across lifecycle
+        # DEC-0008_5 rule 3: one counter per entity, SHARED across lifecycle
         # prefixes — an existing DEC-D-0041 makes the next claim 0042.
         with tempfile.TemporaryDirectory() as d:
             _touch(d, "decisions/DEC-D-0041-20260101-deprecated.md")

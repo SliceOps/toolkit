@@ -63,8 +63,8 @@ class RetiredPrefixes(unittest.TestCase):
             self.assertIn(want, errs[0])
 
     def test_dec0008_retired_prefixes_name_the_plain_word_canonical(self):
-        # LP-/AP- retired by DEC-0008.2 (Conclusion/Priority renames); CF- and
-        # FRAME- both point to MM- after the DEC-0012.1 MentalModel rename.
+        # LP-/AP- retired by DEC-0008_2 (Conclusion/Priority renames); CF- and
+        # FRAME- both point to MM- after the DEC-0012_1 MentalModel rename.
         cases = {
             "corpus/LP-0001-20260101-a.md": ("CONC-", "DEC-0008"),
             "corpus/CF-0001-20260101-a.md": ("MM-", "DEC-0012"),
@@ -130,8 +130,8 @@ class EntityPrefix(unittest.TestCase):
 
     def test_dec0008_old_entity_names_are_implementation_aliases(self):
         # LearningPattern/CognitiveFramework/ActivePriority are now aliases of
-        # Conclusion/MentalModel/Priority — never their own prefix (DEC-0008.2);
-        # Frame itself is an alias of MentalModel since DEC-0012.1.
+        # Conclusion/MentalModel/Priority — never their own prefix (DEC-0008_2);
+        # Frame itself is an alias of MentalModel since DEC-0012_1.
         cases = [
             ("corpus/LP-0001-20260101-x.md", "LearningPattern", "Conclusion"),
             ("corpus/CF-0001-20260101-x.md", "CognitiveFramework", "MentalModel"),
@@ -183,7 +183,7 @@ class Exemptions(unittest.TestCase):
 
     def test_dec0010_reserved_infrastructure_names_exempt(self):
         # AGENTS.md/MEMORY.md/GEMINI.md/_organization.md/_index.md are reserved
-        # infrastructure (DEC-0010.5), never entity artifacts under the grammar.
+        # infrastructure (DEC-0010_5), never entity artifacts under the grammar.
         for base in ("AGENTS.md", "MEMORY.md", "GEMINI.md", "_organization.md", "_index.md"):
             self.assertEqual(_v(base, "---\nentity: DecisionRecord\n---\n"), [], base)
 
@@ -194,7 +194,7 @@ class Exemptions(unittest.TestCase):
 
 
 class UniversalGrammar(unittest.TestCase):
-    """DEC-0008.5 — PREFIX-NNNN-YYYYMMDD-slug.md, all 15 grammar prefixes."""
+    """DEC-0008_5 — PREFIX-NNNN-YYYYMMDD-slug.md, all 15 grammar prefixes."""
 
     def test_valid_forms_pass_for_every_grammar_prefix(self):
         cases = [
@@ -233,7 +233,7 @@ class UniversalGrammar(unittest.TestCase):
             self.assertEqual(errs, [], f"{path}: {errs}")
 
     def test_policy_scope_required_and_enums(self):
-        # DEC-0012.2: scope is mandatory; scope/severity/status are enum-checked.
+        # DEC-0012_2: scope is mandatory; scope/severity/status are enum-checked.
         base = "policies/POL-0001-20260713-x.md"
         errs = _v(base, "---\nentity: Policy\nstatus: active\n---\n")
         self.assertTrue(any("requires scope" in e for e in errs), errs)
@@ -283,7 +283,7 @@ class UniversalGrammar(unittest.TestCase):
 
 
 class DecKindAxis(unittest.TestCase):
-    """DEC-0008.3 — kind axis + edge coherence, cutoff 2026-07-13."""
+    """DEC-0008_3 — kind axis + edge coherence, cutoff 2026-07-13."""
 
     def test_strategic_without_defines_goal_is_error(self):
         text = _dec(kind="strategic", created="2026-08-01")
@@ -348,7 +348,7 @@ class DecKindAxis(unittest.TestCase):
 
 
 class Pyramid(unittest.TestCase):
-    """DEC-0008.4 — Goal.decided-by, Priority.serves-goal + rank."""
+    """DEC-0008_4 — Goal.decided-by, Priority.serves-goal + rank."""
 
     def test_goal_requires_decided_by(self):
         errs = _v("goals/GOAL-0001-20260801-x.md",
@@ -381,7 +381,7 @@ class Pyramid(unittest.TestCase):
 
 
 class SliceCoordinate(unittest.TestCase):
-    """DEC-0008.6 — SLC filename and frontmatter forms."""
+    """DEC-0008_6 — SLC filename and frontmatter forms."""
 
     def test_valid_slc_filename_forms_pass(self):
         for base in ("SLC0012SEC03BL02-20260712-slug.md", "SLC0034-20260712-slug.md"):
@@ -545,7 +545,7 @@ class CheckAndHook(unittest.TestCase):
         self.assertIn("DEC-P-", err)
 
     def test_hook_allows_homologated_write(self):
-        # created predates the DEC-0008.3 kind cutoff (2026-07-13) — this test
+        # created predates the DEC-0008_3 kind cutoff (2026-07-13) — this test
         # is a general well-formed-write smoke test, not a kind-axis test
         # (DecKindAxis covers the cutoff itself).
         code, _ = self._hook({"tool_name": "Write", "tool_input": {

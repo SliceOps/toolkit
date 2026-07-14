@@ -1,6 +1,6 @@
 # Counter Discipline — Layer B.1 (`claim_id.py`)
 
-Mechanizes the **P9 Shared-Resource Pre-flight** for the DEC-0008.5 universal
+Mechanizes the **P9 Shared-Resource Pre-flight** for the DEC-0008_5 universal
 ID grammar (`PREFIX-NNNN-YYYYMMDD-slug.md`): re-scan the corpus for the real
 max claimed number before handing out the next one, reconcile it against the
 `.counters/` bookkeeping file, and claim atomically.
@@ -21,7 +21,7 @@ python3 claim_id.py --root <corpus-root> --entity <PREFIX> [--slug <kebab-slug>]
 ```
 
 - `--root` — the corpus root to scan and claim within (same root a `.counters/` directory lives at).
-- `--entity` — the entity prefix: `DEC`, `INS`, `OUTC`, `CAP`, `GOAL`, `CONC`, `FRAME`, `CP`, `PRI`, `REL`, `PREF`, `VAL`, `SESS` (the DEC-0008.2.1 catalog; case-insensitive input, always upper-cased).
+- `--entity` — the entity prefix: `DEC`, `INS`, `OUTC`, `CAP`, `GOAL`, `CONC`, `FRAME`, `CP`, `PRI`, `REL`, `PREF`, `VAL`, `SESS` (the DEC-0008_2_1 catalog; case-insensitive input, always upper-cased).
 - `--slug` (optional) — kebab-case slug. When given, the tool also prints the full filename under the universal grammar.
 - `--date` (optional) — compact `YYYYMMDD`; defaults to today.
 
@@ -43,7 +43,7 @@ acquired — see below).
    `.counters/` itself, and the usual build/VCS noise) for the highest number
    already claimed for `--entity`, matching `^PREFIX(-[PD])?-0*(\d+)-`. The DEC
    lifecycle infix (`-P-`/`-D-`) is stripped before reading the number — **one
-   counter is shared across lifecycle states** (DEC-0008.5 rule 3): an
+   counter is shared across lifecycle states** (DEC-0008_5 rule 3): an
    existing `DEC-D-0041` makes the next claim `0042`, not a fresh `0001` in
    some separate deprecated-only sequence.
 2. **Reconcile** against `.counters/<prefix-lowercase>.txt` (created, along
@@ -57,7 +57,7 @@ acquired — see below).
    crashed process); the write itself goes to a temp file in the same
    directory, then `os.replace()`s it into place, so a crash mid-write never
    leaves a torn counter file.
-4. **Print** the claimed id, zero-padded to the DEC-0008.5 minimum of 4
+4. **Print** the claimed id, zero-padded to the DEC-0008_5 minimum of 4
    digits (unbounded above — `9999` → `10000` → …), and if `--slug` was
    given, the full filename.
 

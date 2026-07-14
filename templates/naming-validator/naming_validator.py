@@ -17,7 +17,7 @@
 # Normative source: DEC-0008 (cognition cycle + universal ID grammar + kind axis
 # + pyramid), DEC-0009 (ContextPack kinds incl. handoff), DEC-0010 (_index.md
 # reserved-name infrastructure). This script points at the DECs in every
-# message and never redefines the catalog table (DEC-0008.2.1 is single source).
+# message and never redefines the catalog table (DEC-0008_2_1 is single source).
 
 import argparse
 import json
@@ -30,9 +30,9 @@ DEC9 = "DEC-0009"
 DEC10 = "DEC-0010"
 DEC12 = "DEC-0012"
 
-# entity -> canonical prefix (the 14-entity catalog: DEC-0008.2.1 as amended by
+# entity -> canonical prefix (the 14-entity catalog: DEC-0008_2_1 as amended by
 # DEC-0012 — MentalModel rename + Policy; DEC lifecycle variants carry state in
-# the prefix per DEC-0008.5 rule 3).
+# the prefix per DEC-0008_5 rule 3).
 CANON = {
     "DecisionRecord": "DEC-", "InsightRecord": "INS-", "OutcomeRecord": "OUTC-",
     "Capability": "CAP-", "Goal": "GOAL-", "Conclusion": "CONC-",
@@ -47,9 +47,9 @@ IMPL_ALIAS = {
     "AgentContextPack": "ContextPack", "AgentSkill": "Capability",
     "GoalObjective": "Goal", "ValuePrinciple": "Value",
     "AgentPreference": "Preference",
-    # DEC-0008.2 renames: the OLD entity names are now implementation aliases
+    # DEC-0008_2 renames: the OLD entity names are now implementation aliases
     # of the plain-word canonical ones — never their own prefix again.
-    # DEC-0012.1: Frame itself was renamed once more, to MentalModel.
+    # DEC-0012_1: Frame itself was renamed once more, to MentalModel.
     "LearningPattern": "Conclusion", "CognitiveFramework": "MentalModel",
     "Frame": "MentalModel", "ActivePriority": "Priority",
 }
@@ -66,10 +66,10 @@ RETIRED = [
     (re.compile(r"^SKILL-"), "SKILL-", "CAP-", DEC8),
     (re.compile(r"^RUN-"), "RUN-", "CAP- (a runbook is a Capability component: kind: runbook)", DEC8),
     (re.compile(r"^REF-"), "REF-", "retired catch-all: coding standards -> CAP-, patterns -> CONC-, third-party integrations -> vendor connector entity", DEC8),
-    (re.compile(r"^LP-"), "LP-", "CONC- (Conclusion — DEC-0008.2 rename)", DEC8),
-    (re.compile(r"^CF-"), "CF-", "MM- (MentalModel — DEC-0012.1 rename)", DEC12),
-    (re.compile(r"^FRAME-"), "FRAME-", "MM- (MentalModel — DEC-0012.1 rename)", DEC12),
-    (re.compile(r"^AP-"), "AP-", "PRI- (Priority — DEC-0008.2 rename)", DEC8),
+    (re.compile(r"^LP-"), "LP-", "CONC- (Conclusion — DEC-0008_2 rename)", DEC8),
+    (re.compile(r"^CF-"), "CF-", "MM- (MentalModel — DEC-0012_1 rename)", DEC12),
+    (re.compile(r"^FRAME-"), "FRAME-", "MM- (MentalModel — DEC-0012_1 rename)", DEC12),
+    (re.compile(r"^AP-"), "AP-", "PRI- (Priority — DEC-0008_2 rename)", DEC8),
 ]
 
 DEC_STATUS = {"pending", "approved", "deprecated"}
@@ -80,7 +80,7 @@ CAP_KINDS = {"standard", "runbook", "playbook"}
 DEC_KINDS = {"constitutive", "strategic", "tactical"}
 CP_KINDS = {"pack", "brief", "handoff"}
 CP_HANDOFF_REASONS = {"context-exhausted", "spinoff"}
-# Policy (DEC-0012.2). Scope values are the canonical set; vendors MAY extend
+# Policy (DEC-0012_2). Scope values are the canonical set; vendors MAY extend
 # them in their own runtimes (Layer C) — extensions are validated by vendor
 # tooling, not by this reference validator.
 POL_SCOPES = {"environment", "agent", "corpus", "session"}
@@ -88,7 +88,7 @@ POL_SEVERITIES = {"block", "warn"}
 POL_STATUS = {"active", "deprecated"}
 LIFECYCLE_DIRS = {"accepted", "rfcs", "superseded", "deprecated"}
 
-# DEC-0008.3: kind: is OBLIGATORY only for DECs created on/after this date
+# DEC-0008_3: kind: is OBLIGATORY only for DECs created on/after this date
 # (earlier DECs are back-filled fix-on-touch — same cutoff pattern as the
 # consistency validators' P3 author!=approver check, approver_cutoff).
 DEC_KIND_CUTOFF = "2026-07-13"
@@ -97,14 +97,14 @@ EXCLUDE_DIRS = {".git", ".github", ".obsidian", ".wrangler", ".claude", ".worktr
                 ".stversions", "node_modules", "build", "dist", "public",
                 "99-archive", "archive", ".counters", "_meta", "__MACOSX"}
 
-# Reserved-name infrastructure (DEC-0010.5): exempt from the universal grammar,
+# Reserved-name infrastructure (DEC-0010_5): exempt from the universal grammar,
 # never entity artifacts. *-ledger.md is a suffix pattern, matched separately.
 SKIP_BASENAMES = {"README.md", "CLAUDE.md", "AGENTS.md", "MEMORY.md", "GEMINI.md",
                   "_organization.md", "_index.md", "CONTRIBUTING.md",
                   "CODE_OF_CONDUCT.md", "GOVERNANCE.md", "SECURITY.md", "LICENSE.md",
                   "DISCLAIMER.md", "DISCLOSURE.md", "TRADEMARK.md", "LEGAL-REVIEW.md",
                   "ATTRIBUTIONS.md", "STATS-PROVENANCE.md"}
-# DEC-0010.5 gives the glob "*-ledger.md"; the real-world precedent artifact
+# DEC-0010_5 gives the glob "*-ledger.md"; the real-world precedent artifact
 # (slices/ledger.md) is the bare basename with no hyphenated prefix, so
 # this also accepts the exact "ledger.md" — the intent (ledgers are reserved
 # operational infrastructure, never entity artifacts) covers both.
@@ -122,7 +122,7 @@ FM_KEY = re.compile(r'^\s*(entity|[a-z][a-z0-9]*_entity|primary-entity|status|ki
 # scalar FM_KEY above only needs to detect PRESENCE for the edge-coherence
 # checks, so a non-empty match (scalar or the literal `[...]` text) is enough.
 
-# Universal ID grammar (DEC-0008.5): PREFIX-NNNN-YYYYMMDD-slug.md
+# Universal ID grammar (DEC-0008_5): PREFIX-NNNN-YYYYMMDD-slug.md
 # Prefix alternation is longest-first so DEC-P-/DEC-D- match before bare DEC-.
 _PREFIX_ALT = "DEC-P|DEC-D|DEC|INS|OUTC|CAP|GOAL|CONC|MM|CP|POL|PRI|REL|PREF|VAL|SESS"
 UNIVERSAL_GRAMMAR = re.compile(
@@ -131,14 +131,14 @@ UNIVERSAL_GRAMMAR = re.compile(
 # the grammar is "close enough" to be graded against it, vs. genuinely freeform).
 ENTITY_PREFIX_LEAD = re.compile(r"^(?:%s)-" % _PREFIX_ALT)
 
-# Slice coordinate (DEC-0008.6): filename form and the bare frontmatter form.
+# Slice coordinate (DEC-0008_6): filename form and the bare frontmatter form.
 SLC_FILENAME = re.compile(r"^SLC\d{4,}(SEC\d{2,})?(BL\d{2,})?-\d{8}-[a-z0-9-]+\.md$")
 SLC_COORD = re.compile(r"^SLC\d{4,}(SEC\d{2,})?(BL\d{2,})?$")
 SLC_LEAD = re.compile(r"^SLC")
-# Legacy dotted Slice ID (BL-XX.SEC-XX.SL-XXX), retired by DEC-0008.6.
+# Legacy dotted Slice ID (BL-XX.SEC-XX.SL-XXX), retired by DEC-0008_6.
 SLC_LEGACY_DOTTED = re.compile(r"^BL-?\d+\.SEC-?\d+\.SL-?\d+$", re.I)
 
-# --transition-tolerated PRE-v2 filename forms (retired by DEC-0008.5 but not
+# --transition-tolerated PRE-v2 filename forms (retired by DEC-0008_5 but not
 # yet migrated everywhere): date-based (naming homologation v1.2.0 grammar)
 # and counter-based 3-digit (pre-homologation repos, e.g. INS-001-a.md).
 PRE_V2_DATE_BASED = re.compile(r"^(?:%s)-\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*\.md$" % _PREFIX_ALT)
@@ -232,7 +232,7 @@ def validate_file(path, text, tolerate_legacy=False, transition=False):
     m = re.search(r"/(?:10-)?decisions/(accepted|rfcs|superseded|deprecated)/[^/]+\.md$", "/" + p)
     if m:
         errs.append(f"{p}: lifecycle subfolder '{m.group(1)}/' is retired — decisions/ is FLAT; "
-                    f"the DEC-/DEC-P-/DEC-D- prefix carries the state ({DEC8}.5)")
+                    f"the DEC-/DEC-P-/DEC-D- prefix carries the state ({DEC8}_5)")
 
     # 2) retired prefixes — always an error (even under --transition: these are
     #    dead names, never a pre-v2-but-valid form), with the correct form
@@ -246,11 +246,11 @@ def validate_file(path, text, tolerate_legacy=False, transition=False):
     status = fm.get("status")
     created = fm.get("created")
 
-    # 3) implementation aliases in the entity key (includes the DEC-0008.2 renames)
+    # 3) implementation aliases in the entity key (includes the DEC-0008_2 renames)
     if entity in IMPL_ALIAS:
         canonical = IMPL_ALIAS[entity]
         errs.append(f"{p}: entity '{entity}' is an implementation alias — canonical name is "
-                    f"'{canonical}' (prefix {CANON[canonical]}) ({DEC8}.2)")
+                    f"'{canonical}' (prefix {CANON[canonical]}) ({DEC8}_2)")
         entity = canonical
 
     # 4) entity <-> prefix
@@ -260,76 +260,76 @@ def validate_file(path, text, tolerate_legacy=False, transition=False):
             if not base.startswith(DEC_PREFIXES):
                 suggested = dec_prefix_for(LEGACY_STATUS.get(status, status)) + re.sub(r"^[A-Za-z]+-", "", base)
                 errs.append(f"{p}: DecisionRecord file must start with DEC-/DEC-P-/DEC-D- "
-                            f"(suggested: {suggested}) ({DEC8}.5)")
+                            f"(suggested: {suggested}) ({DEC8}_5)")
         elif not base.startswith(want):
             errs.append(f"{p}: entity {entity} file must start with '{want}' "
-                        f"(suggested: {want}{base}) ({DEC8}.5)")
+                        f"(suggested: {want}{base}) ({DEC8}_5)")
 
     # 5) DecisionRecord status enum + prefix/status coherence
     if entity == "DecisionRecord" and status:
         if status in LEGACY_STATUS:
             msg = (f"{p}: legacy status '{status}' — write '{LEGACY_STATUS[status]}' "
-                   f"(read-tolerated only for archives/non-homologated corpora) ({DEC8}.2.1)")
+                   f"(read-tolerated only for archives/non-homologated corpora) ({DEC8}_2_1)")
             if not (tolerate_legacy or transition):
                 errs.append(msg)
         elif status not in DEC_STATUS:
-            errs.append(f"{p}: status '{status}' not canonical — use pending|approved|deprecated ({DEC8}.2.1)")
+            errs.append(f"{p}: status '{status}' not canonical — use pending|approved|deprecated ({DEC8}_2_1)")
         else:
             want_prefix = dec_prefix_for(status)
             actual = next((x for x in DEC_PREFIXES if base.startswith(x)), None)
             if actual and actual != want_prefix:
                 errs.append(f"{p}: prefix '{actual}' does not match status '{status}' "
-                            f"(expected prefix {want_prefix}) ({DEC8}.2.1)")
+                            f"(expected prefix {want_prefix}) ({DEC8}_2_1)")
 
     # 6) OutcomeRecord kind
     if entity == "OutcomeRecord":
         kind = fm.get("kind")
         if not kind:
-            errs.append(f"{p}: OutcomeRecord requires kind: retrospective|postmortem|result ({DEC8}.2.1)")
+            errs.append(f"{p}: OutcomeRecord requires kind: retrospective|postmortem|result ({DEC8}_2_1)")
         elif kind not in OUTC_KINDS:
-            errs.append(f"{p}: OutcomeRecord kind '{kind}' invalid — use retrospective|postmortem|result ({DEC8}.2.1)")
+            errs.append(f"{p}: OutcomeRecord kind '{kind}' invalid — use retrospective|postmortem|result ({DEC8}_2_1)")
 
     # 7) Capability component fields
     if entity == "Capability" and fm.get("kind"):
         kind = fm.get("kind")
         if kind not in CAP_KINDS:
-            errs.append(f"{p}: Capability component kind '{kind}' invalid — use standard|runbook|playbook ({DEC8}.2.1)")
+            errs.append(f"{p}: Capability component kind '{kind}' invalid — use standard|runbook|playbook ({DEC8}_2_1)")
         if not fm.get("capability"):
-            errs.append(f"{p}: Capability component (kind: {kind}) requires capability: <mother-slug> ({DEC8}.2.1)")
+            errs.append(f"{p}: Capability component (kind: {kind}) requires capability: <mother-slug> ({DEC8}_2_1)")
 
-    # 8) DecisionRecord kind axis + edge coherence (DEC-0008.3)
+    # 8) DecisionRecord kind axis + edge coherence (DEC-0008_3)
     if entity == "DecisionRecord":
         kind = fm.get("kind")
         kind_required = bool(created) and str(created).strip() >= DEC_KIND_CUTOFF
         if kind:
             if kind not in DEC_KINDS:
-                errs.append(f"{p}: DecisionRecord kind '{kind}' invalid — use constitutive|strategic|tactical ({DEC8}.3)")
+                errs.append(f"{p}: DecisionRecord kind '{kind}' invalid — use constitutive|strategic|tactical ({DEC8}_3)")
             else:
                 if kind == "strategic" and not _has_value(fm, "defines-goal"):
-                    errs.append(f"{p}: kind: strategic requires defines-goal: [<GOAL id>...] ({DEC8}.3)")
+                    errs.append(f"{p}: kind: strategic requires defines-goal: [<GOAL id>...] ({DEC8}_3)")
                 if kind == "tactical" and not _has_value(fm, "serves-goal"):
-                    errs.append(f"{p}: kind: tactical requires serves-goal: <GOAL id> ({DEC8}.3)")
+                    errs.append(f"{p}: kind: tactical requires serves-goal: <GOAL id> ({DEC8}_3)")
                 if kind == "constitutive" and status == "approved" and not _has_value(fm, "approver"):
-                    errs.append(f"{p}: kind: constitutive with status: approved requires approver: <name> ({DEC8}.3)")
+                    errs.append(f"{p}: kind: constitutive with status: approved requires approver: <name> ({DEC8}_3)")
         elif kind_required and not transition:
             errs.append(f"{p}: DecisionRecord created on/after {DEC_KIND_CUTOFF} requires "
-                        f"kind: constitutive|strategic|tactical ({DEC8}.3; earlier DECs are back-filled fix-on-touch)")
+                        f"kind: constitutive|strategic|tactical ({DEC8}_3; earlier DECs are back-filled fix-on-touch)")
 
-    # 9) Pyramid — Goal.decided-by, Priority.serves-goal + rank (DEC-0008.4)
+    # 9) Pyramid — Goal.decided-by, Priority.serves-goal + rank (DEC-0008_4)
     if entity == "Goal":
         if not _has_value(fm, "decided-by"):
-            errs.append(f"{p}: Goal requires decided-by: <DEC id> ({DEC8}.4)")
+            errs.append(f"{p}: Goal requires decided-by: <DEC id> ({DEC8}_4)")
     if entity == "Priority":
         if not _has_value(fm, "serves-goal"):
-            errs.append(f"{p}: Priority requires serves-goal: <GOAL id> ({DEC8}.4)")
+            errs.append(f"{p}: Priority requires serves-goal: <GOAL id> ({DEC8}_4)")
         if fm.get("priority") in ("high", "medium", "low"):
-            errs.append(f"{p}: priority: {fm.get('priority')} is retired — use rank: <int> ({DEC8}.4)")
+            errs.append(f"{p}: priority: {fm.get('priority')} is retired — use rank: <int> ({DEC8}_4)")
         elif not _has_value(fm, "rank"):
-            errs.append(f"{p}: Priority requires rank: <int> (unique within owner+horizon) ({DEC8}.4)")
+            errs.append(f"{p}: Priority requires rank: <int> (unique within owner+horizon) ({DEC8}_4)")
         else:
             rank = fm.get("rank")
             if not re.match(r"^-?\d+$", str(rank).strip()):
-                errs.append(f"{p}: Priority rank '{rank}' is not an integer ({DEC8}.4)")
+                errs.append(f"{p}: Priority rank '{rank}' is not an integer ({DEC8}_4)")
 
     # 10) ContextPack kinds + handoff reason (DEC-0009)
     if entity == "ContextPack":
@@ -343,39 +343,39 @@ def validate_file(path, text, tolerate_legacy=False, transition=False):
                     errs.append(f"{p}: ContextPack kind: handoff reason '{reason}' invalid — "
                                 f"use context-exhausted|spinoff ({DEC9})")
 
-    # 10b) Policy scope/severity/status (DEC-0012.2)
+    # 10b) Policy scope/severity/status (DEC-0012_2)
     if entity == "Policy":
         scope = fm.get("scope")
         if not scope:
-            errs.append(f"{p}: Policy requires scope: environment|agent|corpus|session ({DEC12}.2)")
+            errs.append(f"{p}: Policy requires scope: environment|agent|corpus|session ({DEC12}_2)")
         elif scope not in POL_SCOPES:
             errs.append(f"{p}: Policy scope '{scope}' not canonical — use environment|agent|corpus|session "
-                        f"(vendor extensions are Layer C, validated by vendor tooling) ({DEC12}.2)")
+                        f"(vendor extensions are Layer C, validated by vendor tooling) ({DEC12}_2)")
         severity = fm.get("severity")
         if severity and severity not in POL_SEVERITIES:
-            errs.append(f"{p}: Policy severity '{severity}' invalid — use block|warn ({DEC12}.2)")
+            errs.append(f"{p}: Policy severity '{severity}' invalid — use block|warn ({DEC12}_2)")
         if status and status not in POL_STATUS:
-            errs.append(f"{p}: Policy status '{status}' invalid — use active|deprecated ({DEC12}.2)")
+            errs.append(f"{p}: Policy status '{status}' invalid — use active|deprecated ({DEC12}_2)")
 
-    # 11) Slice coordinate — frontmatter form (DEC-0008.6)
+    # 11) Slice coordinate — frontmatter form (DEC-0008_6)
     slice_val = fm.get("originating_slice")
     if slice_val and slice_val not in ("null", "None"):
         if SLC_LEGACY_DOTTED.match(slice_val):
             if not transition:
                 errs.append(f"{p}: originating_slice '{slice_val}' uses the retired dotted Slice ID "
                             f"(BL-XX.SEC-XX.SL-XXX) — use the SLC coordinate, e.g. SLC0012SEC03BL02 "
-                            f"({DEC8}.6)")
+                            f"({DEC8}_6)")
         elif SLC_LEAD.match(slice_val) and not SLC_COORD.match(slice_val):
             errs.append(f"{p}: originating_slice '{slice_val}' does not match the SLC coordinate "
-                        f"grammar SLC\\d{{4,}}(SEC\\d{{2,}})?(BL\\d{{2,}})? ({DEC8}.6)")
+                        f"grammar SLC\\d{{4,}}(SEC\\d{{2,}})?(BL\\d{{2,}})? ({DEC8}_6)")
 
-    # 12) Slice coordinate — filename form (DEC-0008.6)
+    # 12) Slice coordinate — filename form (DEC-0008_6)
     if SLC_LEAD.match(base) and not SLC_FILENAME.match(base):
         if not (transition and (PRE_V2_DATE_BASED.match(base) or PRE_V2_COUNTER_BASED.match(base))):
             errs.append(f"{p}: slice-coordinate filename must match "
-                        f"SLC\\d{{4,}}(SEC\\d{{2,}})?(BL\\d{{2,}})?-YYYYMMDD-slug.md ({DEC8}.6)")
+                        f"SLC\\d{{4,}}(SEC\\d{{2,}})?(BL\\d{{2,}})?-YYYYMMDD-slug.md ({DEC8}_6)")
 
-    # 13) Universal ID grammar (DEC-0008.5) — applies to any file that carries
+    # 13) Universal ID grammar (DEC-0008_5) — applies to any file that carries
     #     a recognized catalog entity, OR whose name leads with a recognized
     #     entity prefix (so a malformed name is still caught even if the
     #     frontmatter entity key itself is missing/misspelled).
@@ -386,7 +386,7 @@ def validate_file(path, text, tolerate_legacy=False, transition=False):
         else:
             suggestion = _suggest_universal_name(base, entity, status, created, transition)
             errs.append(f"{p}: filename does not match the universal grammar "
-                        f"PREFIX-NNNN-YYYYMMDD-slug.md (suggested shape: {suggestion}) ({DEC8}.5)")
+                        f"PREFIX-NNNN-YYYYMMDD-slug.md (suggested shape: {suggestion}) ({DEC8}_5)")
 
     return errs
 
@@ -394,7 +394,7 @@ def validate_file(path, text, tolerate_legacy=False, transition=False):
 def _parse_index_targets(index_path, index_text):
     """Extract relative markdown link/path targets from an _index.md route
     table. Matches markdown links `[text](target)` and bare backticked paths
-    `` `path/to/file.md` `` — the two forms DEC-0010.3 route tables use.
+    `` `path/to/file.md` `` — the two forms DEC-0010_3 route tables use.
     Ignores absolute URLs (http/https/mailto) and in-page anchors (#...)."""
     targets = []
     for m in re.finditer(r"\]\(([^)]+)\)", index_text):
@@ -420,7 +420,7 @@ def check_index(root, transition=False):
     index_path = os.path.join(root, "_index.md")
     if not os.path.isfile(index_path):
         if not transition:
-            errs.append(f"{root}: missing root _index.md ({DEC10}.1/.4 — every corpus root "
+            errs.append(f"{root}: missing root _index.md ({DEC10}_1/.4 — every corpus root "
                         f"requires a route-table index)")
         return errs
     try:
@@ -435,7 +435,7 @@ def check_index(root, transition=False):
             candidate = os.path.normpath(os.path.join(root, target))
         if not os.path.exists(candidate):
             errs.append(f"{index_path}: route target '{target}' does not resolve "
-                        f"(broken path — {DEC10}.4)")
+                        f"(broken path — {DEC10}_4)")
     return errs
 
 
