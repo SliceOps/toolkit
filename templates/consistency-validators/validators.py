@@ -716,6 +716,64 @@ def check_evidence_schema(root):
     return errs
 
 
+# A slice coordinate carrying a one-letter sub-slice suffix, in either grammar:
+# SLC form (SLC0010b / SLC0010bSECAPIBL02) or the read-tolerated legacy dotted
+# form (BL-02.SEC-API.SL-010b). Group 1 / group 2 capture the suffix if present.
+_SUBSLICE_SLC_RE = re.compile(
+    r"\bSLC\d{4,}([a-z])?(?:SEC(?:\d{2,}|[A-Z]{2,}))?(?:BL\d{2,})?\b")
+_SUBSLICE_DOTTED_RE = re.compile(
+    r"\bBL-?\d+\.SEC-?(?:\d+|[A-Z]+)\.SL-?\d+([a-z])?\b")
+
+
+def check_subslice_rate(root):
+    """Observability, NOT a gate (P9 — announced, not cut). Reports the
+    sub-slice rate: the share of distinct slice coordinates carrying a
+    one-letter sub-slice suffix. Per DEC-0014_4 the rate is a health signal
+    for planning altitude — a low rate concentrated in inherently-emergent
+    work (tooling/cleanup/meta) is healthy; a rising rate, or one spreading
+    into the plannable core of the build, says slices are being cut too
+    coarse. Returns INFO lines (never error strings); the runner emits them
+    as notices and never fails on them. Returns None when a corpus has no
+    slice coordinates (nothing to report)."""
+    slices = {}  # coordinate string -> has one-letter suffix (bool)
+    for dirpath, _dirs, files in os.walk(root):
+        if ".git" in _norm_parts(dirpath):
+            continue
+        for f in files:
+            if not f.endswith((".md", ".txt")):
+                continue
+            try:
+                with open(os.path.join(dirpath, f),
+                          encoding="utf-8", errors="replace") as fh:
+                    text = fh.read()
+            except OSError:
+                continue
+            for m in _SUBSLICE_SLC_RE.finditer(text):
+                slices[m.group(0)] = bool(m.group(1))
+            for m in _SUBSLICE_DOTTED_RE.finditer(text):
+                slices[m.group(0)] = bool(m.group(1))
+    total = len(slices)
+    if total == 0:
+        return None  # no slice coordinates — nothing to observe
+    sub = sum(1 for has in slices.values() if has)
+    rate = sub / total
+    info = [f"sub-slice rate: {sub}/{total} = {rate * 100:.1f}% of distinct "
+            f"slice coordinates carry a sub-slice suffix (DEC-0014_4)"]
+    # A soft waterline, not a spec constant and not a failure: at/under it the
+    # metric is informational; over it, prompt a look. Tune per corpus.
+    if rate > 0.15:
+        info.append(
+            f"is the {rate * 100:.1f}% concentrated in emergent work "
+            f"(tooling/cleanup/meta) or spreading into the plannable build? "
+            f"the latter says plan finer (principles P4/P5, DEC-0014_4)")
+    return info
+
+
+# Reporters are observability-only: their output is emitted as notices and
+# NEVER sets the failure flag (P9 — degradation announced, never a silent cut).
+REPORTER_CHECKS = {"subslice-rate"}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
@@ -742,6 +800,8 @@ def main():
         "llm-ci-cost": lambda: check_llm_ci_cost(args.root),
         # evidence.v1 (check #10, v0.2.0)
         "evidence-schema": lambda: check_evidence_schema(args.root),
+        # observability reporter (v0.4.0, DEC-0014_4) — signal, never a gate
+        "subslice-rate": lambda: check_subslice_rate(args.root),
     }
     selected = (all_checks if args.checks == "all"
                 else {k: all_checks[k] for k in args.checks.split(",")
@@ -749,14 +809,17 @@ def main():
 
     failed = False
     for name, fn in selected.items():
-        errs = fn()
-        if errs is None:                      # genuine skip (topic-tags unconfigured,
-            # or evidence-schema with zero evidence records in the corpus)
+        result = fn()
+        if result is None:                    # genuine skip (topic-tags unconfigured,
+            # evidence-schema with zero records, or a reporter with no slices)
             print(f"[{name}] SKIPPED")
-        elif errs:
+        elif name in REPORTER_CHECKS:         # observability — emit, never fail (P9)
+            for line in result:
+                print(f"::notice::[{name}] {line}")
+        elif result:
             failed = True
-            print(f"::error::[{name}] {len(errs)} issue(s):")
-            for e in errs:
+            print(f"::error::[{name}] {len(result)} issue(s):")
+            for e in result:
                 print(f"  - {e}")
         else:
             print(f"[{name}] PASS")

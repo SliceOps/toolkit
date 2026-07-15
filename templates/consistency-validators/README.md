@@ -33,6 +33,14 @@ Layers 1–2 are manual (frontmatter discipline, pre-merge checklist, and HITL).
 | `band-unit` | Token-band must be in **billed-equivalent**, NOT total-with-cache (which inflates ~5×). Flags any spec text declaring token-band in total-with-cache as the canonical unit. |
 | `llm-ci-cost` | **R-LLM-CI-COST.** Workflows calling a paid-LLM endpoint must: have a concurrency cancel-in-progress block, NOT trigger on `synchronize` (without a documented exception), and use a step-level draft gate that ends green-not-skipped (a `skipped` required check blocks the PR permanently). |
 
+### Observability reporters (v0.4.0) — signals, never gates
+
+| Reporter | Emits |
+|---|---|
+| `subslice-rate` | The **sub-slice rate** — the share of distinct slice coordinates (SLC or read-tolerated dotted) carrying a one-letter sub-slice suffix. Per **DEC-0014_4** the rate is a health signal for planning altitude, not a defect. Emitted as a `::notice::`; it **never** sets the failure flag and never blocks a merge (P9 — degradation announced, never a silent cut). |
+
+**Reading the signal.** A sub-slice is emergent granularity discovered *in execution* (the plan commits to structure; execution discovers the leaves — principles P4/P5). A low rate **concentrated in inherently-emergent work** (tooling, cleanup, meta-work) is healthy: the suffix is absorbing only the irreducible tail. A **rising** rate, or sub-slices **spreading into the plannable core of the build**, means slices are being cut too coarse — a prompt to plan finer. The soft 15% waterline is a heuristic "worth a look", not a spec constant. **Emergent → suffix; foreseeable batch → numbered sibling slices** (using the suffix to enumerate a known batch is the misuse that inflates the signal). Reporters are registered in `REPORTER_CHECKS`; adding one there makes it emit-only.
+
 ### evidence.v1 — check #10 (`evidence-schema`)
 
 | Check | Enforces |

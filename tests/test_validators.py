@@ -71,6 +71,46 @@ class CounterAtomicity(unittest.TestCase):
             self.assertIn("INS", errs[0])
 
 
+class SubsliceRate(unittest.TestCase):
+    # DEC-0014_4: the sub-slice rate is an observability signal, never a gate.
+
+    def test_no_slices_is_skip(self):
+        # A corpus with no slice coordinates has nothing to observe → None (SKIP).
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "doc.md", "prose with no coordinates at all")
+            self.assertIsNone(v.check_subslice_rate(d))
+
+    def test_rate_counts_suffixed_over_total(self):
+        # Three distinct coordinates, one carrying a sub-slice suffix → 1/3.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "tracker.md",
+                   "SLC0010 done. SLC0011 done. SLC0010b emerged mid-impl.")
+            info = v.check_subslice_rate(d)
+            self.assertIsNotNone(info)
+            self.assertIn("1/3", info[0])
+            self.assertIn("33.3%", info[0])
+
+    def test_legacy_dotted_suffix_recognized(self):
+        # The read-tolerated dotted form's [a-z] tail counts too.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "tracker.md",
+                   "BL-02.SEC-API.SL-010 and BL-02.SEC-API.SL-010b")
+            info = v.check_subslice_rate(d)
+            self.assertIn("1/2", info[0])
+
+    def test_soft_waterline_note_over_threshold(self):
+        # Over the 15% soft waterline, a prompt line is appended — but it is
+        # still INFO (the runner never fails on a reporter).
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "tracker.md", "SLC0010 and SLC0010b")  # 1/2 = 50%
+            info = v.check_subslice_rate(d)
+            self.assertTrue(any("plan finer" in line for line in info))
+
+    def test_reporter_registered_and_never_fails(self):
+        # subslice-rate is registered as a reporter, not a hard check.
+        self.assertIn("subslice-rate", v.REPORTER_CHECKS)
+
+
 class PrincipleCountCoherence(unittest.TestCase):
     def _principles(self, n=12):
         return "\n".join("## P%d — Principle %d\n\nbody" % (i, i)
