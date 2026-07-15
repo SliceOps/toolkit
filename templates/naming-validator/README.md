@@ -29,7 +29,7 @@ Normative source — never redefined here, only pointed at:
 | DEC kind axis | `kind:` not in `constitutive\|strategic\|tactical`; `strategic` without `defines-goal:`; `tactical` without `serves-goal:`; `constitutive` + `status: approved` without `approver:`; `kind:` missing on a DecisionRecord created on/after 2026-07-13 (earlier DECs back-fill fix-on-touch) (DEC-0008_3) |
 | Pyramid | `Goal` without `decided-by:`; `Priority` without `serves-goal:` or integer `rank:`; `priority: high\|medium\|low` (retired — use `rank:`) (DEC-0008_4) |
 | ContextPack kinds | `kind:` not in `pack\|brief\|handoff`; `kind: handoff` with `reason:` not in `context-exhausted\|spinoff` (DEC-0009) |
-| Slice coordinate | filename leading `SLC` not matching `SLC\d{4,}(SEC\d{2,})?(BL\d{2,})?-YYYYMMDD-slug.md`; frontmatter `originating_slice:` not matching the bare coordinate; the retired dotted form (`BL-XX.SEC-XX.SL-XXX`) → SLC suggestion (DEC-0008_6) |
+| Slice coordinate | filename leading `SLC` not matching `SLC\d{4,}[a-z]?(SEC(\d{2,}\|[A-Z]{2,}))?(BL\d{2,})?-YYYYMMDD-slug.md`; frontmatter `originating_slice:` not matching the bare coordinate; an alphabetic section code containing the substring `BL` (forbidden — the block qualifier's opener); the retired dotted form (`BL-XX.SEC-XX.SL-XXX[a-z]`) → SLC suggestion (DEC-0008_6, extended by DEC-0014: optional one-letter sub-slice suffix + alphabetic section codes, each code pure) |
 | Corpus index | (directory `--check` targets only) missing root `_index.md`; any route-table target in `_index.md` that does not resolve on disk (DEC-0010) |
 | OutcomeRecord | missing/invalid `kind: retrospective\|postmortem\|result` |
 | Capability components | `kind:` not in `standard\|runbook\|playbook`, or component without `capability:` back-reference |
@@ -52,7 +52,7 @@ of failing on:
   v1.2.0-era date scheme) and counter-based 3-digit (`PREFIX-NNN-slug.md`,
   pre-homologation repos)
 - a missing root `_index.md`
-- the legacy dotted Slice ID (`BL-XX.SEC-XX.SL-XXX`) in `originating_slice:`
+- the legacy dotted Slice ID (`BL-XX.SEC-XX.SL-XXX[a-z]`) in `originating_slice:`
 - a DecisionRecord created on/after the kind-cutoff with no `kind:` yet
 
 Use it on a corpus mid-migration to the v2 grammar; drop it once the corpus
