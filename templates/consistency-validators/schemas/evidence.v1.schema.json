@@ -323,9 +323,9 @@
       }
     },
     "sliceId": {
-      "description": "Canonical SliceOps slice coordinate SLC[n]SEC[n]BL[n] (spec v2.0.0, DEC-0008.6). The dotted pre-v2 form is read-tolerated for records in immutable history.",
+      "description": "Canonical SliceOps slice coordinate SLC[n][a-z]SEC[n|A-Z]BL[n] (spec v2.0.0 DEC-0008_6, extended by spec v2.1.0 DEC-0014: optional one-letter sub-slice suffix and alphabetic section codes; the block qualifier BL stays numeric). The dotted pre-v2 form (BL-NN[.SEC-NN].SL-NNN[a-z], likewise widened to alphabetic sections) is read-tolerated for records in immutable history. This pattern is a superset of the v2.0.0 pattern — every previously valid sliceId still validates.",
       "type": "string",
-      "pattern": "^(SLC[0-9]{4,}(SEC[0-9]{2,})?(BL[0-9]{2,})?|BL-[0-9]{2,}(\\.SEC-[0-9]{2,})?\\.SL-[0-9]{3}[a-z]?)$"
+      "pattern": "^(SLC[0-9]{4,}[a-z]?(SEC([0-9]{2,}|[A-Z]{2,}))?(BL[0-9]{2,})?|BL-[0-9]{2,}(\\.SEC-([0-9]{2,}|[A-Z]{2,}))?\\.SL-[0-9]{3}[a-z]?)$"
     },
     "decisionRef": {
       "description": "Canonical artifact reference under the universal grammar PREFIX-NNNN-YYYYMMDD-slug (spec v2.0.0 naming.md) or its short citation form (e.g. DEC-0021, INS-0014). Pre-v2 date-based and 3-digit forms (legacy DR- included) remain read-tolerated for pre-homologation archives.",
