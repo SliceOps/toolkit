@@ -421,6 +421,87 @@ class SliceCoordinate(unittest.TestCase):
                             "---\nentity: InsightRecord\noriginating_slice: null\n---\n"), [])
 
 
+class SliceCoordinateDec0014(unittest.TestCase):
+    """DEC-0014 — sub-slice suffix ([a-z]) + alphabetic section codes ([A-Z]{2,},
+    pure, never containing the substring BL). Additive over DEC-0008_6: every
+    coordinate valid before stays valid."""
+
+    def test_valid_subslice_and_alpha_section_filenames_pass(self):
+        # SLC0010b (sub-slice), SLC0010bSECAPIBL02 (sub-slice + alpha SEC + BL —
+        # the SEC parses to API, BL to 02: NOT an anti-BL false positive),
+        # SLC0034SECDOC (alpha SEC, no block), SLC0001bSEC21BL06 (sub-slice +
+        # numeric SEC). The two DEC-0008_6 canonicals stay valid.
+        for base in ("SLC0012SEC03BL02-20260712-slug.md",   # unchanged canonical
+                     "SLC0034-20260712-slug.md",            # unchanged canonical
+                     "SLC0010b-20260712-slug.md",
+                     "SLC0010bSECAPIBL02-20260712-slug.md",
+                     "SLC0001bSEC21BL06-20260712-slug.md",
+                     "SLC0034SECDOC-20260712-x.md"):
+            self.assertEqual(_v(f"slices/{base}", "no entity frontmatter\n"), [], base)
+
+    def test_double_letter_suffix_filename_is_error(self):
+        errs = _v("slices/SLC0010ab-20260712-x.md", "no entity frontmatter\n")
+        self.assertTrue(any("slice-coordinate" in e for e in errs), errs)
+
+    def test_uppercase_suffix_filename_is_error(self):
+        # sub-slice suffix is lowercase only (kept distinct from the uppercase
+        # section alphabet); SLC0010B does not match the grammar.
+        errs = _v("slices/SLC0010B-20260712-x.md", "no entity frontmatter\n")
+        self.assertTrue(any("slice-coordinate" in e for e in errs), errs)
+
+    def test_alpha_section_containing_BL_filename_is_error(self):
+        # DEC-0014_2: an alphabetic section code may not contain 'BL'
+        # (SEC=TABLE contains B-L). Caught by the dedicated anti-BL message.
+        errs = _v("slices/SLC0001SECTABLE-20260712-x.md", "no entity frontmatter\n")
+        self.assertTrue(any("alphabetic section code containing 'BL'" in e for e in errs), errs)
+
+    def test_alpha_section_containing_BL_with_block_filename_is_error(self):
+        errs = _v("slices/SLC0001bSECTABLEBL02-20260712-x.md", "no entity frontmatter\n")
+        self.assertTrue(any("'BL'" in e and "section code" in e for e in errs), errs)
+
+    def test_valid_subslice_and_alpha_section_frontmatter_pass(self):
+        for coord in ("SLC0010b", "SLC0010bSECAPIBL02", "SLC0034SECDOC", "SLC0001bSEC21BL06"):
+            errs = _v("corpus/INS-0001-20260712-x.md",
+                      f"---\nentity: InsightRecord\noriginating_slice: {coord}\n---\n")
+            self.assertFalse(any("originating_slice" in e for e in errs), (coord, errs))
+
+    def test_double_letter_suffix_frontmatter_is_error(self):
+        errs = _v("corpus/INS-0001-20260712-x.md",
+                  "---\nentity: InsightRecord\noriginating_slice: SLC0010ab\n---\n")
+        self.assertTrue(any("originating_slice" in e for e in errs), errs)
+
+    def test_mixed_alnum_section_frontmatter_is_error(self):
+        # Section codes are PURE (digits xor uppercase letters). SECA1B2 is mixed
+        # → does not match the coordinate grammar at all.
+        errs = _v("corpus/INS-0001-20260712-x.md",
+                  "---\nentity: InsightRecord\noriginating_slice: SLC0001SECA1B2\n---\n")
+        self.assertTrue(any("originating_slice" in e and "does not match" in e for e in errs), errs)
+
+    def test_alpha_section_containing_BL_frontmatter_is_error(self):
+        errs = _v("corpus/INS-0001-20260712-x.md",
+                  "---\nentity: InsightRecord\noriginating_slice: SLC0001SECTABLE\n---\n")
+        self.assertTrue(any("alphabetic section code" in e and "'BL'" in e for e in errs), errs)
+
+    def test_canonical_alpha_section_is_not_a_false_positive(self):
+        # Regression guard: SLC0010bSECAPIBL02 must NOT trip the anti-BL rule —
+        # the grammar parses SEC=API (no 'BL') and BL=02. A greedy re-scan of the
+        # raw string WOULD hit the 'BL' in 'APIBL'; the check reads the capture
+        # group instead, so this is accepted.
+        errs = _v("corpus/INS-0001-20260712-x.md",
+                  "---\nentity: InsightRecord\noriginating_slice: SLC0010bSECAPIBL02\n---\n")
+        self.assertEqual(errs, [], errs)
+
+    def test_legacy_dotted_with_alpha_section_and_suffix_recognized(self):
+        # DEC-0014: the dotted recognizer is widened so migration tooling SEES
+        # alphabetic sections and the sub-slice suffix. BL-02.SEC-API.SL-010b is
+        # recognized as the (retired) dotted form → flagged in strict mode,
+        # tolerated under --transition.
+        text = "---\nentity: InsightRecord\noriginating_slice: BL-02.SEC-API.SL-010b\n---\n"
+        strict = _v("corpus/INS-0001-20260712-x.md", text)
+        self.assertTrue(any("dotted" in e and "SLC" in e for e in strict), strict)
+        self.assertEqual(_v("corpus/INS-0001-20260712-x.md", text, transition=True), [])
+
+
 class ContextPackKinds(unittest.TestCase):
     """DEC-0009 — ContextPack kind: pack|brief|handoff, handoff reason."""
 
