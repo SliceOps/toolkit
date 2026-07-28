@@ -16,7 +16,8 @@
 #
 # Normative source: DEC-0008 (cognition cycle + universal ID grammar + kind axis
 # + pyramid), DEC-0009 (ContextPack kinds incl. handoff), DEC-0010 (_index.md
-# reserved-name infrastructure). This script points at the DECs in every
+# reserved-name infrastructure), DEC-0014 (slice coordinate: sub-slice suffix +
+# alphabetic section codes, spec v2.1.0). This script points at the DECs in every
 # message and never redefines the catalog table (DEC-0008_2_1 is single source).
 
 import argparse
@@ -132,31 +133,33 @@ UNIVERSAL_GRAMMAR = re.compile(
 # the grammar is "close enough" to be graded against it, vs. genuinely freeform).
 ENTITY_PREFIX_LEAD = re.compile(r"^(?:%s)-" % _PREFIX_ALT)
 
-# Slice coordinate (DEC-0008_6, extended by DEC-0014): filename and bare
-# frontmatter forms. DEC-0014_1 adds an OPTIONAL one-letter lowercase sub-slice
-# suffix ([a-z]) after the slice number; DEC-0014_2 admits ALPHABETIC section
-# codes ([A-Z]{2,}) alongside numeric ones (\d{2,}), each code PURE (digits xor
-# uppercase letters). The inner SEC value is its own capture group so the
-# anti-BL constraint (DEC-0014_2 — an alphabetic code may not contain "BL") can
-# read the PARSED code rather than re-scan (greedy re-scan would false-positive
-# on e.g. SLC0010bSECAPIBL02, where the grammar correctly parses SEC=API BL=02).
-# BL stays numeric.
+# Slice coordinate (DEC-0008_6, extended by DEC-0014): filename form and the
+# bare frontmatter form. DEC-0014_1 adds an OPTIONAL one-letter lowercase
+# sub-slice suffix ([a-z]) after the slice number; DEC-0014_2 admits ALPHABETIC
+# section codes ([A-Z]{2,}) alongside numeric ones (\d{2,}), each code PURE
+# (digits xor uppercase letters). The inner SEC value is its own capture group
+# so the anti-BL constraint (DEC-0014_2 — an alphabetic code may not contain
+# "BL") reads the PARSED code rather than re-scanning the whole string (a
+# re-scan would false-positive on e.g. SLC0010bSECAPIBL02, which the grammar
+# correctly parses as SEC=API, BL=02). BL stays numeric.
 SLC_FILENAME = re.compile(r"^SLC\d{4,}[a-z]?(SEC(\d{2,}|[A-Z]{2,}))?(BL\d{2,})?-\d{8}-[a-z0-9-]+\.md$")
 SLC_COORD = re.compile(r"^SLC\d{4,}[a-z]?(SEC(\d{2,}|[A-Z]{2,}))?(BL\d{2,})?$")
 SLC_LEAD = re.compile(r"^SLC")
 # Legacy dotted Slice ID (BL-XX.SEC-XX.SL-XXX[a-z]), retired by DEC-0008_6.
 # Widened by DEC-0014 so migration tooling SEES the sub-slice suffix ([a-z]) and
-# alphabetic section codes ([A-Z]+) in old dotted coordinates (previously invisible).
+# alphabetic section codes ([A-Z]+) in dotted coordinates: under the pre-v2.1.0
+# recognizer those forms matched nothing at all and were invisible to sweeps.
 SLC_LEGACY_DOTTED = re.compile(r"^BL-?\d+\.SEC-?(\d+|[A-Z]+)\.SL-?\d+[a-z]?$", re.I)
 
 
 def _alpha_sec_has_bl(m):
-    """DEC-0014_2 anti-BL constraint: True when the SLC coordinate's PARSED
-    section code (capture group 2 of SLC_COORD / SLC_FILENAME) is alphabetic and
-    contains the substring 'BL' — the one parse-ambiguity source against the BL
-    block qualifier. Numeric codes and a missing SEC are never flagged."""
+    """DEC-0014_2 anti-BL constraint: True when the coordinate's PARSED section
+    code (group 2 of SLC_COORD / SLC_FILENAME) is alphabetic and contains the
+    substring 'BL' — the block qualifier's opener and the coordinate's sole
+    parse-ambiguity source. Numeric codes and a missing SEC are never flagged."""
     sec = m.group(2) if m else None
     return bool(sec) and sec.isalpha() and sec.isupper() and "BL" in sec
+
 
 # --transition-tolerated PRE-v2 filename forms (retired by DEC-0008_5 but not
 # yet migrated everywhere): date-based (naming homologation v1.2.0 grammar)
@@ -174,6 +177,14 @@ def frontmatter(text):
     for line in lines[1:200]:
         if line.strip() == "---":
             break
+        # Only TOP-LEVEL keys (YAML column 0) are the document's own catalog
+        # frontmatter. An INDENTED key belongs to a nested mapping — e.g. a
+        # vendor's own `*-entity-mapping:` block (Layer C data-model annotation,
+        # NOT the SliceOps catalog) — and must never be read as a catalog
+        # signal. The catalog entity is declared by a top-level entity: /
+        # <runtime>_entity: / primary-entity: key (DEC-0008_2_1; entity_of).
+        if line[:1].isspace():
+            continue
         m = FM_KEY.match(line)
         if m:
             key, val = m.group(1), m.group(2).strip()
@@ -389,11 +400,13 @@ def validate_file(path, text, tolerate_legacy=False, transition=False):
             m = SLC_COORD.match(slice_val)
             if not m:
                 errs.append(f"{p}: originating_slice '{slice_val}' does not match the SLC coordinate "
-                            f"grammar SLC\\d{{4,}}[a-z]?(SEC(\\d{{2,}}|[A-Z]{{2,}}))?(BL\\d{{2,}})? ({DEC8}_6/{DEC14}_1/_2)")
+                            f"grammar SLC\\d{{4,}}[a-z]?(SEC(\\d{{2,}}|[A-Z]{{2,}}))?(BL\\d{{2,}})? "
+                            f"({DEC8}_6/{DEC14}_1/_2)")
             elif _alpha_sec_has_bl(m):
                 errs.append(f"{p}: originating_slice '{slice_val}' has an alphabetic section code "
-                            f"containing 'BL' — forbidden (the block qualifier's opener; sole parse "
-                            f"ambiguity source). Pick section letters that do not spell 'BL' ({DEC14}_2)")
+                            f"containing 'BL' — forbidden (the block qualifier's opener; the sole "
+                            f"parse-ambiguity source). Pick section letters that do not spell 'BL' "
+                            f"({DEC14}_2)")
 
     # 12) Slice coordinate — filename form (DEC-0008_6, extended by DEC-0014)
     if SLC_LEAD.match(base):
@@ -401,12 +414,12 @@ def validate_file(path, text, tolerate_legacy=False, transition=False):
         if not m:
             if not (transition and (PRE_V2_DATE_BASED.match(base) or PRE_V2_COUNTER_BASED.match(base))):
                 errs.append(f"{p}: slice-coordinate filename must match "
-                            f"SLC\\d{{4,}}[a-z]?(SEC(\\d{{2,}}|[A-Z]{{2,}}))?(BL\\d{{2,}})?-YYYYMMDD-slug.md "
-                            f"({DEC8}_6/{DEC14}_1/_2)")
+                            f"SLC\\d{{4,}}[a-z]?(SEC(\\d{{2,}}|[A-Z]{{2,}}))?(BL\\d{{2,}})?"
+                            f"-YYYYMMDD-slug.md ({DEC8}_6/{DEC14}_1/_2)")
         elif _alpha_sec_has_bl(m):
             errs.append(f"{p}: slice-coordinate filename has an alphabetic section code containing "
-                        f"'BL' — forbidden (the block qualifier's opener; sole parse ambiguity source). "
-                        f"Pick section letters that do not spell 'BL' ({DEC14}_2)")
+                        f"'BL' — forbidden (the block qualifier's opener; the sole parse-ambiguity "
+                        f"source). Pick section letters that do not spell 'BL' ({DEC14}_2)")
 
     # 13) Universal ID grammar (DEC-0008_5) — applies to any file that carries
     #     a recognized catalog entity, OR whose name leads with a recognized

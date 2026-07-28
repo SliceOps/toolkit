@@ -193,6 +193,55 @@ class Exemptions(unittest.TestCase):
             self.assertEqual(_v(path, "---\nentity: DecisionRecord\n---\n"), [], path)
 
 
+class FrontmatterParsing(unittest.TestCase):
+    """Only TOP-LEVEL keys (column 0) are the document's own catalog frontmatter.
+
+    A document may carry a vendor's own nested mapping inside the frontmatter
+    block (a Layer C data-model annotation). Its keys are INDENTED under that
+    mapping and must never be read as the catalog entity (DEC-0008_2_1)."""
+
+    def test_indented_key_in_nested_mapping_is_not_catalog_frontmatter(self):
+        text = ("---\n"
+                "title: Product data-model notes\n"
+                "vendor-entity-mapping:\n"
+                "  entity: DecisionRecord\n"
+                "  status: approved\n"
+                "---\n# x\n")
+        fm = nv.frontmatter(text)
+        self.assertNotIn("entity", fm)
+        self.assertIsNone(nv.entity_of(fm))
+        # ...so the freeform filename earns no grammar violation from it.
+        self.assertEqual(_v("corpus/data-model-notes.md", text), [])
+
+    def test_top_level_key_wins_over_an_earlier_nested_one(self):
+        # The nested mapping comes FIRST: without the column-0 guard it is
+        # latched as the entity (first occurrence wins) and the correctly-named
+        # DecisionRecord below would be graded against the wrong entity.
+        text = ("---\n"
+                "vendor-entity-mapping:\n"
+                "  entity: Capability\n"
+                "entity: DecisionRecord\n"
+                "status: approved\n"
+                "created: 2026-05-01\n"
+                "---\n# x\n")
+        self.assertEqual(nv.frontmatter(text).get("entity"), "DecisionRecord")
+        self.assertEqual(_v("decisions/DEC-0001-20260501-ok.md", text), [])
+
+    def test_indented_mapped_entity_key_is_ignored_too(self):
+        # The mapped `<runtime>_entity` form (Layer C.1) gets the same guard.
+        text = ("---\n"
+                "some-mapping:\n"
+                "  runtime_entity: Capability\n"
+                "---\n# x\n")
+        self.assertIsNone(nv.entity_of(nv.frontmatter(text)))
+
+    def test_top_level_keys_are_still_read(self):
+        # The guard must not shadow ordinary column-0 frontmatter.
+        fm = nv.frontmatter(DEC_OK)
+        self.assertEqual(fm.get("entity"), "DecisionRecord")
+        self.assertEqual(fm.get("status"), "approved")
+
+
 class UniversalGrammar(unittest.TestCase):
     """DEC-0008_5 — PREFIX-NNNN-YYYYMMDD-slug.md, all 15 grammar prefixes."""
 
