@@ -381,7 +381,7 @@ class Pyramid(unittest.TestCase):
 
 
 class SliceCoordinate(unittest.TestCase):
-    """DEC-0008_6 — SLC filename and frontmatter forms."""
+    """DEC-0008_6 — SLC filename and frontmatter forms (extended by DEC-0014)."""
 
     def test_valid_slc_filename_forms_pass(self):
         for base in ("SLC0012SEC03BL02-20260712-slug.md", "SLC0034-20260712-slug.md"):
@@ -419,6 +419,80 @@ class SliceCoordinate(unittest.TestCase):
     def test_null_originating_slice_is_not_flagged(self):
         self.assertEqual(_v("corpus/INS-0001-20260712-x.md",
                             "---\nentity: InsightRecord\noriginating_slice: null\n---\n"), [])
+
+
+class SliceCoordinateExtensions(unittest.TestCase):
+    """DEC-0014 — sub-slice suffix (_1) and alphabetic section codes (_2), spec v2.1.0."""
+
+    def test_subslice_suffix_forms_pass(self):
+        for coord in ("SLC0042b", "SLC0042bSEC03BL02", "SLC0007aSECQABL04"):
+            errs = _v("corpus/INS-0001-20260712-x.md",
+                      f"---\nentity: InsightRecord\noriginating_slice: {coord}\n---\n")
+            self.assertFalse(any("originating_slice" in e for e in errs), (coord, errs))
+
+    def test_alphabetic_section_code_forms_pass(self):
+        for coord in ("SLC0007SECQA", "SLC0007SECQABL04", "SLC0012SECOPSBL09"):
+            errs = _v("corpus/INS-0001-20260712-x.md",
+                      f"---\nentity: InsightRecord\noriginating_slice: {coord}\n---\n")
+            self.assertFalse(any("originating_slice" in e for e in errs), (coord, errs))
+
+    def test_extended_filename_forms_pass(self):
+        for base in ("SLC0042bSEC03BL02-20260712-slug.md", "SLC0007aSECQABL04-20260712-slug.md",
+                     "SLC0012SECOPS-20260712-slug.md"):
+            self.assertEqual(_v(f"slices/{base}", "no entity frontmatter\n"), [], base)
+
+    def test_multi_letter_subslice_suffix_is_error(self):
+        # DEC-0014_1: exactly ONE lowercase letter.
+        errs = _v("corpus/INS-0001-20260712-x.md",
+                  "---\nentity: InsightRecord\noriginating_slice: SLC0042bc\n---\n")
+        self.assertTrue(any("originating_slice" in e for e in errs))
+
+    def test_mixed_section_code_is_error(self):
+        # DEC-0014_2: a section code is digits XOR uppercase letters, never mixed.
+        errs = _v("corpus/INS-0001-20260712-x.md",
+                  "---\nentity: InsightRecord\noriginating_slice: SLC0007SEC3A\n---\n")
+        self.assertTrue(any("originating_slice" in e for e in errs))
+
+    def test_lowercase_section_code_is_error(self):
+        errs = _v("corpus/INS-0001-20260712-x.md",
+                  "---\nentity: InsightRecord\noriginating_slice: SLC0007secqa\n---\n")
+        self.assertTrue(any("originating_slice" in e for e in errs))
+
+    def test_alphabetic_section_containing_bl_is_error(self):
+        # DEC-0014_2 anti-BL constraint — the sole parse-ambiguity source.
+        errs = _v("corpus/INS-0001-20260712-x.md",
+                  "---\nentity: InsightRecord\noriginating_slice: SLC0007SECTBL\n---\n")
+        self.assertTrue(any("BL" in e for e in errs), errs)
+
+    def test_alphabetic_section_containing_bl_in_filename_is_error(self):
+        errs = _v("slices/SLC0007SECTBL-20260712-slug.md", "no entity frontmatter\n")
+        self.assertTrue(any("BL" in e for e in errs), errs)
+
+    def test_alphabetic_section_not_false_flagged_against_block_qualifier(self):
+        # SEC=API + BL=02 parses correctly; a naive re-scan for 'BL' would
+        # false-positive on the block qualifier itself.
+        errs = _v("corpus/INS-0001-20260712-x.md",
+                  "---\nentity: InsightRecord\noriginating_slice: SLC0010bSECAPIBL02\n---\n")
+        self.assertEqual(errs, [])
+
+    def test_alphabetic_block_qualifier_is_still_an_error(self):
+        # DEC-0014_2: BL stays numeric.
+        errs = _v("corpus/INS-0001-20260712-x.md",
+                  "---\nentity: InsightRecord\noriginating_slice: SLC0007SEC03BLXX\n---\n")
+        self.assertTrue(any("originating_slice" in e for e in errs))
+
+    def test_dotted_recognizer_sees_subslice_and_alphabetic_sections(self):
+        # Pre-v2.1.0 these matched no pattern at all: invisible to migration sweeps.
+        for coord in ("BL-02.SEC-03.SL-012b", "BL-09.SEC-QA.SL-010", "BL-09.SEC-QA.SL-010b"):
+            errs = _v("corpus/INS-0001-20260712-x.md",
+                      f"---\nentity: InsightRecord\noriginating_slice: {coord}\n---\n")
+            self.assertTrue(any("dotted" in e and "SLC" in e for e in errs), (coord, errs))
+
+    def test_extended_dotted_forms_tolerated_under_transition(self):
+        for coord in ("BL-02.SEC-03.SL-012b", "BL-09.SEC-QA.SL-010"):
+            self.assertEqual(_v("corpus/INS-0001-20260712-x.md",
+                                f"---\nentity: InsightRecord\noriginating_slice: {coord}\n---\n",
+                                transition=True), [], coord)
 
 
 class ContextPackKinds(unittest.TestCase):
