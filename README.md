@@ -2,7 +2,7 @@
 
 > CI guardrail templates, validators, and tooling for SliceOps™ adopters.
 
-**Status: public · v0.5.0.** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DEC-2026-06-15-sliceops-license-ratification`).
+**Status: public · v0.6.0.** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DEC-2026-06-15-sliceops-license-ratification`).
 
 ## What's here
 
@@ -29,7 +29,7 @@ python3 templates/consistency-validators/validators.py \
 # a runtime that tags entities under a mapped frontmatter key:  --entity-key your_key
 ```
 
-`--checks all` runs all 11 checks; `plan-completeness` gates a plan BEFORE its slices execute (DEC-0020 clause 4) and reports `SKIPPED` when the corpus holds no plans; `evidence-schema` validates any `*.evidence.json` / `*.evidence.v1.json` records under `--root` against the canonical [evidence.v1](https://github.com/SliceOps/spec/blob/main/reference/evidence/evidence-v1.md) schema (vendored in `templates/consistency-validators/schemas/`), and reports `SKIPPED` (green) when the corpus has none.
+`--checks all` runs all 12 checks; `scaffold-completeness` reports a corpus missing a canonical decade or a decade missing its readme (DEC-0023); `plan-completeness` gates a plan BEFORE its slices execute (DEC-0020 clause 4) and reports `SKIPPED` when the corpus holds no plans; `evidence-schema` validates any `*.evidence.json` / `*.evidence.v1.json` records under `--root` against the canonical [evidence.v1](https://github.com/SliceOps/spec/blob/main/reference/evidence/evidence-v1.md) schema (vendored in `templates/consistency-validators/schemas/`), and reports `SKIPPED` (green) when the corpus has none.
 
 To run it from CI **without vendoring a copy**, see [`templates/consistency-validators/consistency-validators.yml`](templates/consistency-validators/consistency-validators.yml) — it checks the repo out and runs the script. (The SliceOps spec repo runs exactly this on every PR — dogfooding.)
 

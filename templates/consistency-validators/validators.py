@@ -47,7 +47,14 @@ def _norm_parts(path):
 # Since spec v1.2.0 decisions/ folders are FLAT and the DEC-D- prefix carries the
 # frozen (deprecated/superseded) state — the dir names remain excluded for
 # pre-v1.2.0 corpora; DEC-D- files are the flat-layout equivalent (see find_docs).
-_SKIP_DIRS = {".git", "99-archive", "archive", "superseded", "deprecated"}
+# ".claude" excluded since v0.6.0: agent harnesses keep git worktrees under
+# .claude/worktrees/, so every artifact appears once per worktree. DEC-0019
+# recorded the consequence — counter-atomicity reported 17 collisions, all
+# false, while the one real collision was cross-branch and invisible to any
+# filesystem walk. A worktree is another checkout of the same corpus, never a
+# second corpus.
+_SKIP_DIRS = {".git", ".claude", "node_modules",
+              "99-archive", "archive", "superseded", "deprecated"}
 _FROZEN_FILE = re.compile(r"^DEC-D-")   # v1.2.0 flat-layout frozen records
 _WF_MARKER = os.path.join(".github", "workflows")
 
@@ -228,7 +235,10 @@ def check_counter_atomicity(root):
     # not be mis-read as a counter and false-positive every same-year file.
     seen = defaultdict(list)
     for dirpath, _, files in os.walk(root):
-        if ".git" in _norm_parts(dirpath):
+        # _SKIP_DIRS rather than ".git" alone: a git worktree under .claude/ is
+        # another checkout of the SAME corpus, and counting it produced 17 false
+        # collisions in the incident DEC-0019 records.
+        if _norm_parts(dirpath) & _SKIP_DIRS:
             continue
         for f in files:
             # date-based naming (incl. v1.2.0 lifecycle infix DEC-P-/DEC-D-):
@@ -899,6 +909,78 @@ def check_plan_completeness(root):
     return errors
 
 
+# --- scaffold completeness (check #12, DEC-0023 clause 4) ------------------
+# DEC-0023 superseded DEC-0011_2's presence activation: every canonical decade
+# exists in every corpus, and each carries a README saying what belongs there.
+# The reason is readability — under presence activation an absent decade and a
+# forgotten one are byte-identical, so a corpus at 7 of 9 looks exactly like a
+# corpus that legitimately needs 7.
+
+_CANONICAL_DECADES = (
+    "00-context", "10-insights", "20-conclusions", "30-decisions", "40-goals",
+    "50-products", "60-execution", "70-outcomes", "99-archive",
+)
+
+
+def _container_roots(root):
+    """A corpus root is a directory holding sliceops.json in CONTAINER form.
+    Pointer manifests ({"ref": ...}) mark a code repository, which by DEC-0011_1
+    carries no corpus and must NOT be asked for decades."""
+    out = []
+    for dirpath, dirs, files in os.walk(root):
+        if _norm_parts(dirpath) & _SKIP_DIRS:
+            dirs[:] = []
+            continue
+        if "sliceops.json" not in files:
+            continue
+        try:
+            with open(os.path.join(dirpath, "sliceops.json"),
+                      encoding="utf-8", errors="replace") as fh:
+                manifest = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if "ref" in manifest:          # pointer: a code repo, not a corpus
+            continue
+        # A published-standard repository uses a PUBLISHING layout, not the decade
+        # container: its decision record is the deliverable, so it is laid out for
+        # readers of a standard (DEC-0002, exempted by DEC-0022 clause 3). Asking it
+        # for decades is asking the wrong question of the right repo.
+        if "published-standard" in (manifest.get("extensions") or {}):
+            continue
+        out.append(dirpath)
+    return sorted(out)
+
+
+def check_scaffold_completeness(root):
+    """Reports canonical decades that are absent, and present decades with no
+    README. Returns None when nothing under --root declares itself a corpus
+    (no container manifest) — a tree that is not a SliceOps corpus is not a
+    failing one.
+
+    Free decades 80/90 are NOT checked: they stay opt-in and are created only
+    when declared in the manifest's extensions (DEC-0023 clause 1).
+
+    An empty decade is never an error. DEC-0023 clause 3 makes emptiness a
+    declared gap, and this check exists to make gaps visible, not to punish
+    them."""
+    roots = _container_roots(root)
+    if not roots:
+        return None
+    errors = []
+    for c in roots:
+        rel = os.path.relpath(c, root)
+        label = "" if rel == "." else f"{rel}: "
+        for d in _CANONICAL_DECADES:
+            p = os.path.join(c, d)
+            if not os.path.isdir(p):
+                errors.append(f"{label}canonical decade '{d}' is absent — the scaffold "
+                              f"is complete, always (DEC-0023 clause 1)")
+            elif not os.path.isfile(os.path.join(p, "README.md")):
+                errors.append(f"{label}'{d}' has no README — an empty folder is silent, "
+                              f"and a decade must say what belongs there (DEC-0023 clause 2)")
+    return errors
+
+
 # Reporters are observability-only: their output is emitted as notices and
 # NEVER sets the failure flag (P9 — degradation announced, never a silent cut).
 REPORTER_CHECKS = {"subslice-rate"}
@@ -932,6 +1014,8 @@ def main():
         "evidence-schema": lambda: check_evidence_schema(args.root),
         # plan gate (check #11, v0.5.0, DEC-0020 clause 4) — fires BEFORE code exists
         "plan-completeness": lambda: check_plan_completeness(args.root),
+        # scaffold (check #12, v0.6.0, DEC-0023 clause 4)
+        "scaffold-completeness": lambda: check_scaffold_completeness(args.root),
         # observability reporter (v0.4.0, DEC-0014_4) — signal, never a gate
         "subslice-rate": lambda: check_subslice_rate(args.root),
     }
