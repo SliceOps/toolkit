@@ -559,6 +559,69 @@ class ScaffoldCompleteness(unittest.TestCase):
                    '{"spec":"2.2.0","corpus":"engineering"}')
             self.assertEqual([], v.check_scaffold_completeness(d))
 
+
+    def test_undeclared_corpus_is_caught(self):
+        # The blind spot this closes: the check finds corpora by their manifest, so
+        # a corpus that never declared one was invisible — a tree carrying three
+        # decade folders passed as clean.
+        with tempfile.TemporaryDirectory() as d:
+            for dec in ("10-decisions", "70-execution", "80-operations"):
+                _write(d, f"{dec}/x.md", "# x\n")
+            errs = v.check_scaffold_completeness(d)
+            self.assertTrue(any("looks like a corpus" in e for e in errs))
+
+    def test_canonical_number_with_wrong_name_is_named(self):
+        # 70-execution occupies the number the canon reserves for 70-outcomes: a
+        # pre-DEC-0011 layout, not free adopter space.
+        with tempfile.TemporaryDirectory() as d:
+            for dec in ("10-decisions", "70-execution"):
+                _write(d, f"{dec}/x.md", "# x\n")
+            errs = v.check_scaffold_completeness(d)
+            self.assertTrue(any("reserved name is '70-outcomes'" in e for e in errs))
+            self.assertTrue(any("reserved name is '10-insights'" in e for e in errs))
+
+    def test_free_decade_number_is_not_flagged_as_wrong_name(self):
+        with tempfile.TemporaryDirectory() as d:
+            for dec in ("80-operations", "90-vendor"):
+                _write(d, f"{dec}/x.md", "# x\n")
+            self.assertFalse(any("reserved name" in e
+                                 for e in v.check_scaffold_completeness(d)))
+
+    def test_one_decade_folder_is_not_a_corpus(self):
+        # Two or more, so a lone NN-name folder in an ordinary project is not a
+        # finding.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "01-drafts/x.md", "# x\n")
+            self.assertIsNone(v.check_scaffold_completeness(d))
+
+    def test_declared_corpus_subfolders_are_not_a_nested_corpus(self):
+        # 00-context/01-values, 02-preferences… are decade-shaped. Descending into
+        # a declared corpus would read them as an undeclared one.
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d)
+            for sub in ("01-values", "02-preferences", "03-mental-models"):
+                _write(d, f"00-context/{sub}/x.md", "# x\n")
+            self.assertEqual([], v.check_scaffold_completeness(d))
+
+    def test_undeclared_corpus_is_reported_once_not_per_nesting_level(self):
+        with tempfile.TemporaryDirectory() as d:
+            for dec in ("10-decisions", "40-architecture"):
+                _write(d, f"eng/{dec}/x.md", "# x\n")
+            for sub in ("00-cross-cutting", "01-integration-core"):
+                _write(d, f"eng/40-architecture/{sub}/x.md", "# x\n")
+            errs = v.check_scaffold_completeness(d)
+            self.assertEqual(1, len([e for e in errs if "looks like a corpus" in e]))
+
+    def test_non_utf8_file_does_not_crash_the_run(self):
+        # Observed on a real corpus: a latin-1 byte in one file took down the whole
+        # run through read_frontmatter.
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d)
+            with open(os.path.join(d, "30-decisions", "latin.md"), "wb") as fh:
+                fh.write("---\nentity: DecisionRecord\nname: informaci\u00f3n\n---\n".encode("latin-1"))
+            self.assertEqual([], v.check_scaffold_completeness(d))
+            v.read_frontmatter(os.path.join(d, "30-decisions", "latin.md"))
+
     def test_registered_and_gates(self):
         self.assertNotIn("scaffold-completeness", v.REPORTER_CHECKS)
 

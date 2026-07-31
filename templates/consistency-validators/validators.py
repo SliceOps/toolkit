@@ -69,7 +69,9 @@ def read_frontmatter(path):
     or inline `{}` maps — install PyYAML, or keep frontmatter within the subset,
     if you need those.
     """
-    with open(path, encoding="utf-8") as fh:
+    # errors="replace" like every other reader here: a latin-1 byte in one file of a
+    # corpus must not take down the whole run (observed 2026-07-31 on a real corpus).
+    with open(path, encoding="utf-8", errors="replace") as fh:
         text = fh.read()
     m = FM.match(text)
     if not m:
@@ -951,6 +953,54 @@ def _container_roots(root):
     return sorted(out)
 
 
+_DECADE_DIR_RE = re.compile(r"^\d{2}-[a-z][a-z0-9-]*$")
+_CANON_BY_NUMBER = {d.split("-", 1)[0]: d for d in _CANONICAL_DECADES}
+
+
+def _undeclared_corpora(root, declared):
+    """Directories that LOOK like a corpus but declare none.
+
+    The completeness check above can only audit corpora it can find, and it finds
+    them by their container manifest. A corpus that was never declared is invisible
+    to it — which is how a tree carrying `10-decisions/`, `70-execution/` and
+    `80-operations/` passes as clean. That is the same shape of error the framework
+    keeps catching elsewhere: a correct answer to a narrower question than the one
+    that matters.
+
+    Signal: two or more `NN-name/` directories and no container manifest at that
+    level. Reported with the stronger sub-signal when present — a decade NUMBER
+    that is canonical carrying a NON-canonical name (`70-execution` where the
+    canon says `70-outcomes`) is a pre-DEC-0011 layout, not a free decade."""
+    issues = []
+    declared = {os.path.abspath(d) for d in declared}
+    for dirpath, dirs, files in os.walk(root):
+        if _norm_parts(dirpath) & _SKIP_DIRS:
+            dirs[:] = []
+            continue
+        # A declared corpus is audited by the completeness check above. Do not
+        # descend into it: its own sub-decades (00-context/01-values, 02-preferences,
+        # …) are decade-shaped and would read as a nested undeclared corpus.
+        if os.path.abspath(dirpath) in declared or "sliceops.json" in files:
+            dirs[:] = []
+            continue
+        decades = sorted(d for d in dirs if _DECADE_DIR_RE.match(d))
+        if len(decades) < 2:
+            continue
+        rel = os.path.relpath(dirpath, root)
+        label = "" if rel == "." else f"{rel}: "
+        dirs[:] = []          # reported once; its own sub-folders are not a second corpus
+        issues.append(f"{label}looks like a corpus ({', '.join(decades)}) but declares "
+                      f"none — no sliceops.json, so no tool can see it (DEC-0011_1/_6)")
+        for d in decades:
+            num = d.split("-", 1)[0]
+            canon = _CANON_BY_NUMBER.get(num)
+            if canon and canon != d:
+                issues.append(f"{label}'{d}' occupies a canonical decade number whose "
+                              f"reserved name is '{canon}' — a pre-DEC-0011 layout, not "
+                              f"free adopter space")
+    return issues
+
+
 def check_scaffold_completeness(root):
     """Reports canonical decades that are absent, and present decades with no
     README. Returns None when nothing under --root declares itself a corpus
@@ -964,9 +1014,10 @@ def check_scaffold_completeness(root):
     declared gap, and this check exists to make gaps visible, not to punish
     them."""
     roots = _container_roots(root)
+    undeclared = _undeclared_corpora(root, roots)
     if not roots:
-        return None
-    errors = []
+        return undeclared or None
+    errors = list(undeclared)
     for c in roots:
         rel = os.path.relpath(c, root)
         label = "" if rel == "." else f"{rel}: "
