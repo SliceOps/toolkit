@@ -41,6 +41,25 @@ Layers 1–2 are manual (frontmatter discipline, pre-merge checklist, and HITL).
 
 **Reading the signal.** A sub-slice is emergent granularity discovered *in execution* (the plan commits to structure; execution discovers the leaves — principles P4/P5). A low rate **concentrated in inherently-emergent work** (tooling, cleanup, meta-work) is healthy: the suffix is absorbing only the irreducible tail. A **rising** rate, or sub-slices **spreading into the plannable core of the build**, means slices are being cut too coarse — a prompt to plan finer. The soft 15% waterline is a heuristic "worth a look", not a spec constant. **Emergent → suffix; foreseeable batch → numbered sibling slices** (using the suffix to enumerate a known batch is the misuse that inflates the signal). Reporters are registered in `REPORTER_CHECKS`; adding one there makes it emit-only.
 
+### Scaffold — check #12 (`scaffold-completeness`)
+
+| Check | Enforces |
+|---|---|
+| `scaffold-completeness` | Every canonical decade exists in every corpus, and each carries a `README.md` saying what belongs there (**DEC-0023**, superseding DEC-0011_2's presence activation). |
+
+**Why the rule changed.** Under presence activation an **absent** decade and a **forgotten** one were byte-identical — a corpus at 7 of 9 looked exactly like a corpus that legitimately needed 7. The census that produced DEC-0023 found precisely that, in a corpus also carrying a non-canonical folder from an incomplete migration, with no way to tell which decades were unused and which were dropped.
+
+**The README is the point.** An empty folder alone is silent. A decade whose readme says *"no goals recorded yet; `GOAL-` entities live here, each with `decided-by:`"* reports its own emptiness and tells the reader what would fill it — which answers the objection presence activation raised, by **content rather than by absence**.
+
+**An empty decade is never an error** (DEC-0023 clause 3). The check exists to make gaps visible, not to punish them.
+
+**Three things it does not ask for:**
+- **Free decades 80/90** — opt-in, created only when declared in the manifest's `extensions`.
+- **Pointer repositories** — a `sliceops.json` with `ref` marks a code repository, which carries no container at all (DEC-0011_1).
+- **Published-standard repositories** — their decision record *is* the deliverable, so they use a publishing layout rather than the decade container (DEC-0002, exempted by DEC-0022 clause 3). Asking one for decades is asking the wrong question of the right repo.
+
+**Discovery**: any directory holding a container-form `sliceops.json` under `--root`. A tree that declares no corpus reports `SKIPPED` — not being a SliceOps corpus is not a failure.
+
 ### Plan gate — check #11 (`plan-completeness`)
 
 | Check | Enforces |

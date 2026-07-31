@@ -481,5 +481,87 @@ class PlanCompleteness(unittest.TestCase):
         self.assertNotIn("plan-completeness", v.REPORTER_CHECKS)
 
 
+_DECADES = ("00-context", "10-insights", "20-conclusions", "30-decisions", "40-goals",
+            "50-products", "60-execution", "70-outcomes", "99-archive")
+
+
+class ScaffoldCompleteness(unittest.TestCase):
+    """DEC-0023 clause 4 — every canonical decade exists and says what it holds."""
+
+    def _corpus(self, d, manifest='{"spec":"2.2.0","corpus":"engineering"}',
+                decades=_DECADES, readmes=True):
+        _write(d, "sliceops.json", manifest)
+        for dec in decades:
+            _write(d, f"{dec}/README.md" if readmes else f"{dec}/x.md", "# x\n")
+
+    def test_not_a_corpus_is_skip(self):
+        # No container manifest anywhere: a tree that is not a SliceOps corpus
+        # is not a failing one.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "src/main.py", "print(1)\n")
+            self.assertIsNone(v.check_scaffold_completeness(d))
+
+    def test_complete_scaffold_passes(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d)
+            self.assertEqual([], v.check_scaffold_completeness(d))
+
+    def test_absent_decade_is_caught(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d, decades=[x for x in _DECADES if x != "40-goals"])
+            self.assertTrue(any("'40-goals' is absent" in e
+                                for e in v.check_scaffold_completeness(d)))
+
+    def test_decade_without_readme_is_caught(self):
+        # The README is the point: an empty folder alone is silent.
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d, readmes=False)
+            errs = v.check_scaffold_completeness(d)
+            self.assertEqual(len(_DECADES), len(errs))
+            self.assertTrue(all("has no README" in e for e in errs))
+
+    def test_empty_decade_is_not_an_error(self):
+        # DEC-0023 clause 3: emptiness is a declared gap, never a defect.
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d)   # every decade holds only its README
+            self.assertEqual([], v.check_scaffold_completeness(d))
+
+    def test_pointer_manifest_is_not_a_corpus(self):
+        # A code repository carries no container (DEC-0011_1), so it is never
+        # asked for decades.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "sliceops.json", '{"ref":"../_sliceops","remote":"https://x"}')
+            self.assertIsNone(v.check_scaffold_completeness(d))
+
+    def test_published_standard_uses_a_publishing_layout(self):
+        # DEC-0002 + DEC-0022 clause 3: its decision record IS the deliverable,
+        # so it is laid out for readers of a standard, not on decades.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "sliceops.json",
+                   '{"spec":"2.2.0","corpus":"engineering",'
+                   '"extensions":{"published-standard":"x"}}')
+            _write(d, "decisions/DEC-0001-20260101-x.md", "# x\n")
+            self.assertIsNone(v.check_scaffold_completeness(d))
+
+    def test_free_decades_are_not_required(self):
+        # 80/90 stay opt-in (DEC-0023 clause 1).
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d)
+            self.assertFalse(any("80-" in e or "90-" in e
+                                 for e in v.check_scaffold_completeness(d)))
+
+    def test_worktrees_are_not_second_corpora(self):
+        # A git worktree under .claude/ is another checkout of the same corpus.
+        # Counting it produced the 17 false collisions DEC-0019 records.
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d)
+            _write(d, ".claude/worktrees/wt/sliceops.json",
+                   '{"spec":"2.2.0","corpus":"engineering"}')
+            self.assertEqual([], v.check_scaffold_completeness(d))
+
+    def test_registered_and_gates(self):
+        self.assertNotIn("scaffold-completeness", v.REPORTER_CHECKS)
+
+
 if __name__ == "__main__":
     unittest.main()
