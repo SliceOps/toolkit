@@ -41,6 +41,24 @@ Layers 1–2 are manual (frontmatter discipline, pre-merge checklist, and HITL).
 
 **Reading the signal.** A sub-slice is emergent granularity discovered *in execution* (the plan commits to structure; execution discovers the leaves — principles P4/P5). A low rate **concentrated in inherently-emergent work** (tooling, cleanup, meta-work) is healthy: the suffix is absorbing only the irreducible tail. A **rising** rate, or sub-slices **spreading into the plannable core of the build**, means slices are being cut too coarse — a prompt to plan finer. The soft 15% waterline is a heuristic "worth a look", not a spec constant. **Emergent → suffix; foreseeable batch → numbered sibling slices** (using the suffix to enumerate a known batch is the misuse that inflates the signal). Reporters are registered in `REPORTER_CHECKS`; adding one there makes it emit-only.
 
+### Plan gate — check #11 (`plan-completeness`)
+
+| Check | Enforces |
+|---|---|
+| `plan-completeness` | A plan under `6N-execution/6N-plans/` is **complete before its slices execute**: no unchecked definition-of-ready box while the gate claims `READY`, every slice row citing a substrate spec or declared under *Asserted scope*, and every planned coordinate present in the derived DAG. |
+
+**Why it exists.** Every other check here audits the decision corpus or the framework's self-coherence, and every mechanized gate in SliceOps fires at or after **merge** — when code already exists. An incomplete *plan* failed against nothing. This is the first check that runs **before** execution (**DEC-0020** clause 4), the pre-execution counterpart of P6's evidence gate.
+
+**What it does NOT check: altitude.** Whether a plan is coarse or fine is P5's business and stays a judgment call. This check is about **completeness** — a slice that is *declared* is declared in full. Coarse-but-complete is the intended state (DEC-0020 clause 5); both partial cells of that matrix are defects, and neither is licensed by P5.
+
+**Declaring beats omitting.** A slice with no substrate spec is *allowed* when it appears under **Asserted scope** — the point is that asserted scope is visible, not that it is forbidden (**DEC-0017** clause 2). Likewise a plan may carry unchecked boxes when its gate honestly says `BLOCKED`; only a plan **claiming** `READY` must satisfy every one.
+
+**Columns are located by header, never by position.** A plan that renames or drops the *Derives from* column **fails loudly** rather than silently disabling the derivation check — a positional heuristic passed exactly that case during development. Only the `## Slices` table is read: a plan's other tables (*Asserted scope*, *Blocked*, *Waves*) also carry coordinates, and reading them as declarations applies the wrong columns to the wrong rows.
+
+**Discovery**: `*.md` under any `6N-execution/6N-plans/` path (DEC-0011_4), with `6N-execution/6N-dags/` read for the DAG comparison. A corpus with **zero** plans reports `SKIPPED` (green) — a corpus that does not plan here is silent, not failing, the same contract as `evidence-schema`.
+
+Template: [`plan-template.md`](https://github.com/SliceOps/spec/blob/main/reference/templates/plan-template.md) · workflow and the full gate: [`workflows/planning.md`](https://github.com/SliceOps/spec/blob/main/reference/workflows/planning.md).
+
 ### evidence.v1 — check #10 (`evidence-schema`)
 
 | Check | Enforces |
