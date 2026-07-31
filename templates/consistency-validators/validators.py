@@ -769,6 +769,136 @@ def check_subslice_rate(root):
     return info
 
 
+# --- plan completeness (check #11, DEC-0020 clause 4) ---------------------
+# The first gate that fires BEFORE code exists. Every other check here audits
+# the decision corpus or the framework's self-coherence; this one audits the
+# unit of work while it is still a commitment.
+
+_PLAN_DIR_RE = re.compile(r"6\d-execution[/\\]6\d-plans")
+_DAG_DIR_RE = re.compile(r"6\d-execution[/\\]6\d-dags")
+_UNCHECKED_RE = re.compile(r"^\s*-\s*\[ \]\s*(.+?)\s*$", re.M)
+_GATE_RE = re.compile(r"^\*\*Gate status\*\*:\s*(.+?)\s*$", re.M)
+_ROW_RE = re.compile(r"^\|(.*)$", re.M)
+_COORD_RE = re.compile(r"^`?(SLC\d{4,}[a-z]?(?:SEC(?:\d{2,}|[A-Z]{2,}))?"
+                       r"(?:BL\d{2,})?)`?$")
+_PLACEHOLDER = {"", "—", "-", "–", "tbd", "n/a", "<spec-slug>", "<substrate spec>"}
+
+
+def _cells(line):
+    """Markdown table row -> trimmed cell values, without the outer pipes."""
+    return [c.strip().strip("`").strip() for c in line.strip().strip("|").split("|")]
+
+
+def _slice_rows(text):
+    """Yield (coordinate, {header: value}) for every table row whose first cell is
+    a slice coordinate. Columns are located BY HEADER, never by position: a plan
+    that adds or reorders a column must not silently disable the gate."""
+    headers = None
+    for line in text.splitlines():
+        if not line.lstrip().startswith("|"):
+            headers = None
+            continue
+        cells = _cells(line)
+        if set("".join(cells)) <= set("-: "):      # the ---|--- separator
+            continue
+        if cells and _COORD_RE.match(cells[0]):
+            row = dict(zip(headers, cells)) if headers else {}
+            yield cells[0], row
+        else:
+            headers = [c.lower() for c in cells]
+
+
+def _find_in(root, dir_re):
+    out = []
+    for dirpath, _dirs, files in os.walk(root):
+        parts = _norm_parts(dirpath)
+        if parts & _SKIP_DIRS:
+            continue
+        if not dir_re.search(dirpath.replace(os.sep, "/")):
+            continue
+        out.extend(os.path.join(dirpath, f) for f in files if f.endswith(".md"))
+    return sorted(out)
+
+
+def check_plan_completeness(root):
+    """Plan gate (DEC-0020 clause 4). A plan states a commitment; this checks the
+    commitment is complete BEFORE its slices execute, which is the one moment no
+    other gate covers — P6 closes a slice at merge, when code already exists.
+
+    Fails on: an unchecked definition-of-ready box while the gate claims READY, a
+    slice row citing no substrate spec that is not declared under asserted scope,
+    a coordinate that breaks naming.md §5, and a DAG that does not derive from the
+    plan's slices. Returns None when a corpus holds no plans — a corpus that does
+    not plan here is not failing, it is silent (same contract as evidence-schema).
+
+    Deliberately NOT checked: whether the plan is coarse or fine. That is altitude,
+    which P5 governs and leaves to judgment; this checks completeness, which it
+    does not (DEC-0020 clause 5)."""
+    plans = _find_in(root, _PLAN_DIR_RE)
+    if not plans:
+        return None
+    errors = []
+    dag_text = ""
+    for d in _find_in(root, _DAG_DIR_RE):
+        try:
+            with open(d, encoding="utf-8", errors="replace") as fh:
+                dag_text += fh.read()
+        except OSError:
+            pass
+
+    for path in plans:
+        rel = os.path.relpath(path, root)
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                text = fh.read()
+        except OSError:
+            errors.append(f"{rel}: unreadable")
+            continue
+
+        gate = _GATE_RE.search(text)
+        claims_ready = bool(gate) and gate.group(1).strip().upper().startswith("READY")
+        unchecked = [m.group(1)[:60] for m in _UNCHECKED_RE.finditer(text)]
+        if not gate:
+            errors.append(f"{rel}: no '**Gate status**:' line — a plan states whether "
+                          f"it is READY or BLOCKED (DEC-0020 clause 2)")
+        elif claims_ready and unchecked:
+            for u in unchecked:
+                errors.append(f"{rel}: gate claims READY but a definition-of-ready "
+                              f"box is unchecked: {u}")
+
+        # Asserted scope is a declaration, not an omission: a slice with no
+        # substrate spec is allowed, but it must appear in that section.
+        asserted = text.split("## Asserted scope", 1)
+        asserted_text = asserted[1].split("\n## ", 1)[0] if len(asserted) > 1 else ""
+
+        # Only the "## Slices" table declares slices. A plan holds several tables
+        # that also carry coordinates — Asserted scope, Blocked, Waves — and reading
+        # those as declarations would apply the wrong columns to the wrong rows.
+        slices_section = text.split("## Slices", 1)
+        if len(slices_section) < 2:
+            if claims_ready:
+                errors.append(f"{rel}: gate claims READY but there is no '## Slices' "
+                              f"section to declare them (DEC-0020 clause 2)")
+            continue
+        rows = list(_slice_rows(slices_section[1].split("\n## ", 1)[0]))
+        if claims_ready and not rows:
+            errors.append(f"{rel}: gate claims READY but the plan declares no slices")
+        for coord, row in rows:
+            col = next((k for k in row if "derives" in k), None)
+            if col is None:
+                errors.append(f"{rel}: the slice table has no 'Derives from' column, so "
+                              f"derivation cannot be checked (DEC-0017 clause 2)")
+                break
+            derives = row[col].lower() not in _PLACEHOLDER
+            if not derives and coord not in asserted_text:
+                errors.append(f"{rel}: {coord} cites no substrate spec and is not "
+                              f"declared under 'Asserted scope' (DEC-0017 clause 2)")
+            if dag_text and coord not in dag_text:
+                errors.append(f"{rel}: {coord} is in the plan but not in the derived "
+                              f"DAG — the DAG did not derive from this plan (P5)")
+    return errors
+
+
 # Reporters are observability-only: their output is emitted as notices and
 # NEVER sets the failure flag (P9 — degradation announced, never a silent cut).
 REPORTER_CHECKS = {"subslice-rate"}
@@ -800,6 +930,8 @@ def main():
         "llm-ci-cost": lambda: check_llm_ci_cost(args.root),
         # evidence.v1 (check #10, v0.2.0)
         "evidence-schema": lambda: check_evidence_schema(args.root),
+        # plan gate (check #11, v0.5.0, DEC-0020 clause 4) — fires BEFORE code exists
+        "plan-completeness": lambda: check_plan_completeness(args.root),
         # observability reporter (v0.4.0, DEC-0014_4) — signal, never a gate
         "subslice-rate": lambda: check_subslice_rate(args.root),
     }

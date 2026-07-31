@@ -386,5 +386,100 @@ class LlmCiCost(unittest.TestCase):
             self.assertTrue(any("synchronize" in e for e in v.check_llm_ci_cost(d)))
 
 
+_PLAN = """# Plan: demo
+
+**Gate status**: READY
+
+- [x] Derivation
+- [x] Field completeness
+
+## Slices
+
+| Coordinate | Slice | Tok | Derives from | Depends on | State |
+|---|---|---|---|---|---|
+| `SLC0001SEC01BL01` | first | `M` | `grafo-de-identidad` | \u2014 | ready |
+
+## Asserted scope
+
+| Coordinate | Why no spec | What would close it |
+|---|---|---|
+"""
+
+
+class PlanCompleteness(unittest.TestCase):
+    """The plan gate (check #11, DEC-0020 clause 4) — the only check that fires
+    before code exists."""
+
+    def _corpus(self, d, plan=_PLAN, dag="graph TD\n  SLC0001SEC01BL01\n"):
+        _write(d, "60-execution/62-plans/plan.md", plan)
+        if dag is not None:
+            _write(d, "60-execution/63-dags/dag.md", dag)
+
+    def test_no_plans_is_skip(self):
+        # A corpus that does not plan here is silent, not failing — same
+        # contract as evidence-schema.
+        with tempfile.TemporaryDirectory() as d:
+            _write(d, "30-decisions/DEC-0001-20260101-x.md", "---\nentity: DecisionRecord\n---\n")
+            self.assertIsNone(v.check_plan_completeness(d))
+
+    def test_complete_plan_passes(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d)
+            self.assertEqual([], v.check_plan_completeness(d))
+
+    def test_unchecked_box_while_claiming_ready_is_caught(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d, _PLAN.replace("- [x] Derivation", "- [ ] Derivation"))
+            self.assertTrue(any("unchecked" in e for e in v.check_plan_completeness(d)))
+
+    def test_blocked_gate_may_carry_unchecked_boxes(self):
+        # Declaring yourself blocked is honest, not a defect. Only a plan that
+        # CLAIMS ready must satisfy every box.
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d, _PLAN.replace("**Gate status**: READY",
+                                          "**Gate status**: BLOCKED \u2014 spec missing")
+                              .replace("- [x] Derivation", "- [ ] Derivation"))
+            self.assertEqual([], v.check_plan_completeness(d))
+
+    def test_missing_gate_line_is_caught(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d, _PLAN.replace("**Gate status**: READY", ""))
+            self.assertTrue(any("Gate status" in e for e in v.check_plan_completeness(d)))
+
+    def test_slice_without_substrate_spec_is_caught(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d, _PLAN.replace("`grafo-de-identidad`", "\u2014"))
+            self.assertTrue(any("cites no substrate spec" in e
+                                for e in v.check_plan_completeness(d)))
+
+    def test_asserted_scope_declaration_is_accepted(self):
+        # Asserted scope is a declaration, not an omission: a slice with no spec
+        # is allowed precisely because it is named.
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d, _PLAN.replace("`grafo-de-identidad`", "\u2014").replace(
+                "| Coordinate | Why no spec | What would close it |\n|---|---|---|",
+                "| Coordinate | Why no spec | What would close it |\n|---|---|---|\n"
+                "| `SLC0001SEC01BL01` | spec pending | write it |"))
+            self.assertEqual([], v.check_plan_completeness(d))
+
+    def test_slice_missing_from_dag_is_caught(self):
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d, dag="graph TD\n  SLC0002SEC01BL01\n")
+            self.assertTrue(any("not in the derived DAG" in e
+                                for e in v.check_plan_completeness(d)))
+
+    def test_renamed_derives_column_is_caught_not_silently_skipped(self):
+        # Columns are located by header. A plan that renames the column must fail
+        # loudly rather than disable the derivation check.
+        with tempfile.TemporaryDirectory() as d:
+            self._corpus(d, _PLAN.replace("| Derives from ", "| Origin "))
+            self.assertTrue(any("no 'Derives from' column" in e
+                                for e in v.check_plan_completeness(d)))
+
+    def test_registered_and_gates(self):
+        # Unlike subslice-rate, this one IS a gate: it must not be a reporter.
+        self.assertNotIn("plan-completeness", v.REPORTER_CHECKS)
+
+
 if __name__ == "__main__":
     unittest.main()
