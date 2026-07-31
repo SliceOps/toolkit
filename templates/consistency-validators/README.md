@@ -58,7 +58,19 @@ Layers 1–2 are manual (frontmatter discipline, pre-merge checklist, and HITL).
 - **Pointer repositories** — a `sliceops.json` with `ref` marks a code repository, which carries no container at all (DEC-0011_1).
 - **Published-standard repositories** — their decision record *is* the deliverable, so they use a publishing layout rather than the decade container (DEC-0002, exempted by DEC-0022 clause 3). Asking one for decades is asking the wrong question of the right repo.
 
-**Discovery**: any directory holding a container-form `sliceops.json` under `--root`. A tree that declares no corpus reports `SKIPPED` — not being a SliceOps corpus is not a failure.
+**Discovery**: any directory holding a container-form `sliceops.json` under `--root`.
+
+### Undeclared corpora (v0.6.1)
+
+Discovery-by-manifest had a blind spot: the check answered *"is this declared corpus complete?"* but not *"should this tree have a corpus at all?"* A corpus that never declared one was invisible — a tree carrying `10-decisions/`, `70-execution/` and `80-operations/` passed as clean. That is the same shape of error the framework keeps catching elsewhere: a correct answer to a narrower question than the one that matters.
+
+The check now also reports a directory that **looks like a corpus and declares none** — two or more `NN-name/` folders with no `sliceops.json`. When a folder occupies a **canonical decade number under a non-canonical name** (`70-execution` where the canon reserves `70-outcomes`), it says so: that is a pre-DEC-0011 layout, not free adopter space. Free numbers 80/90 are never flagged this way.
+
+Reported **once per tree**, not per nesting level, and a declared corpus is never descended into — its own `00-context/01-values`, `02-preferences`… are decade-shaped and would otherwise read as a nested undeclared corpus.
+
+**What it still cannot see**: a multi-repo workspace that should have a container but has no decade folders anywhere — a directory of repositories is indistinguishable from any other directory of repositories. That gap is real and is not papered over with a fragile heuristic.
+
+A tree with neither a manifest nor decade-shaped folders reports `SKIPPED` — not being a SliceOps corpus is not a failure.
 
 ### Plan gate — check #11 (`plan-completeness`)
 
