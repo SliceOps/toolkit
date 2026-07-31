@@ -4,6 +4,19 @@ Reserved-name infrastructure (DEC-0010): the map of where to look for what, so
 no agent or human reads this repo wholesale. Loading chain: `README.md` (thin,
 always loaded) → this file (small, says WHERE) → the exact path below.
 
+## This repo carries no corpus
+
+It is a **code repository inside the SliceOps product workspace**, so its decisions
+live in the workspace container, not here — DEC-0011_1: *"code repositories never
+carry a container of their own"*, one product, one corpus, one set of counters.
+`sliceops.json` is the pointer. It claims neither exemption of DEC-0022: this
+toolkit's decisions are construction, and it is not a clonable template.
+
+| Looking for… | Open |
+|---|---|
+| Decisions about this toolkit | the workspace container `../_sliceops/30-decisions/` (private: `SliceOps/_sliceops`) |
+| The framework spec itself | [`SliceOps/spec`](https://github.com/SliceOps/spec) |
+
 ## Route table
 
 | Looking for… | Open |
