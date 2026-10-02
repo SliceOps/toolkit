@@ -2,7 +2,7 @@
 
 ## Our pledge
 
-We pledge to make participation in the SliceOps™ community a harassment-free
+We pledge to make participation in the SliceOps® community a harassment-free
 experience for everyone, regardless of background, identity, or experience level.
 
 ## Standards

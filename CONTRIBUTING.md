@@ -1,4 +1,4 @@
-# Contributing to the SliceOps™ Toolkit
+# Contributing to the SliceOps® Toolkit
 
 This repository is the **code and tooling layer** of SliceOps (consistency
 validators, CI-guardrail templates, the band-calibration script). It is public and
