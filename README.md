@@ -1,6 +1,6 @@
 # SliceOps Toolkit
 
-> CI guardrail templates, validators, and tooling for SliceOps™ adopters.
+> CI guardrail templates, validators, and tooling for SliceOps® adopters.
 
 **Status: public · v0.6.1.** Companion to [sliceops-spec](https://github.com/SliceOps/spec). Licensed under the [MIT License](LICENSE) (ratified 2026-06-15, `DEC-2026-06-15-sliceops-license-ratification`).
 
@@ -74,8 +74,8 @@ Licensed under the [MIT License](LICENSE). Copyright (c) 2026 Andrés Ramírez S
 
 Code files carry an `SPDX-License-Identifier: MIT` header so per-file scope stays unambiguous when files are reused individually.
 
-SliceOps™ is a trademark of [Andrés Ramírez Sierra](https://andres.co) (EUIPO filing #019381071, pending registration); trademark usage is governed separately by [`TRADEMARK.md`](https://github.com/SliceOps/spec/blob/main/TRADEMARK.md) in [sliceops-spec](https://github.com/SliceOps/spec). The MIT license does not transfer trademark rights.
+SliceOps® is a registered trademark of [Andrés Ramírez Sierra](https://andres.co) in the European Union (EUIPO #019381071, registered 2026-09-26); trademark usage is governed separately by [`TRADEMARK.md`](https://github.com/SliceOps/spec/blob/main/TRADEMARK.md) in [sliceops-spec](https://github.com/SliceOps/spec). The MIT license does not transfer trademark rights.
 
 ---
 
-SliceOps™ is an open framework authored by [Andrés Ramírez Sierra](https://andres.co). Trademark and copyright held personally.
+SliceOps® is an open framework authored by [Andrés Ramírez Sierra](https://andres.co). Trademark and copyright held personally.
